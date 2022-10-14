@@ -120,7 +120,9 @@ public class Part1 {
 
     try (Socket socket = new Socket(InetAddress.getByName(HOST), tcpPort)) {
       // ? Seems we don't need to send anything to the server?
-      //
+//      byte[] message = new byte[HEADER_LENGTH];
+//      OutputStream output = socket.getOutputStream();
+//      output.write(message);
       // read from the server
       InputStream input = socket.getInputStream();
       byte[] buff = new byte[HEADER_LENGTH + 16];

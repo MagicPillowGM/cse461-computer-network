@@ -1,1 +1,1 @@
-Member Name: George Ma; 
+Member Name: George Ma, Linden Gan (lg57)

@@ -1,3 +1,5 @@
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.*;
 import java.nio.ByteBuffer;
 
@@ -108,6 +110,36 @@ public class Part1 {
       System.out.println("Stage B completed !!!!!");
     } catch (Exception e) {
       System.out.println(e);
+    }
+  }
+
+  public static ByteBuffer stageC(ByteBuffer prevResp) {
+    prevResp.position(HEADER_LENGTH);
+    int tcpPort = prevResp.getInt();
+    int secretB = prevResp.getInt();
+
+    try (Socket socket = new Socket(InetAddress.getByName(HOST), tcpPort)) {
+      // ? Seems we don't need to send anything to the server?
+      //
+      // read from the server
+      InputStream input = socket.getInputStream();
+      byte[] buff = new byte[HEADER_LENGTH + 16];
+      int numRead = input.read(buff);
+      while (numRead > 0) {
+        numRead = input.read(buff);
+      }
+      // parse response
+      ByteBuffer response = ByteBuffer.wrap(buff);
+      response.position(HEADER_LENGTH);
+      int num2 = response.getInt();
+      int len2 = response.getInt();
+      int secretC = response.getInt();
+      char c = response.getChar();
+      System.out.println("num2:" + num2 + " len2:" + len2 + "secretC:" + secretC + "c:" + c);
+      return response;
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return null;
     }
   }
 

@@ -23,13 +23,16 @@ public class Part1 {
     ByteBuffer stageAResule = stageA();
     System.out.println("--------------------------------");
     System.out.println("Stage B begin:");
-    stageB(stageAResule);
+    ByteBuffer stageBRsult = stageB(stageAResule);
+    System.out.println("--------------------------------");
+    System.out.println("Stage C begin:");
+    stageC(stageBRsult);
     System.out.println("--------------------------------");
   }
 
   public static ByteBuffer stageA() {
-    int num, len, udp_port, secretA;
-    num = len = udp_port = secretA = -1;
+    int num, len, udpPort, secretA;
+    num = len = udpPort = secretA = -1;
 
     try {
       // Sent message to the server
@@ -47,9 +50,9 @@ public class Part1 {
       respond.position(HEADER_LENGTH);
       num = respond.getInt();
       len = respond.getInt();
-      udp_port = respond.getInt();
+      udpPort = respond.getInt();
       secretA = respond.getInt();
-      System.out.println("num: " + num + " len: " + len + " udp_port: " + udp_port + " secretA: " + secretA);
+      System.out.println("num: " + num + " len: " + len + " udp_port: " + udpPort + " secretA: " + secretA);
       System.out.println("Stage A completed !!!!!");
       return respond;
     } catch (Exception e) {
@@ -58,17 +61,19 @@ public class Part1 {
     }
   }
 
-  public static void stageB(ByteBuffer respond) {
+  public static ByteBuffer stageB(ByteBuffer respond) {
 
     respond.position(HEADER_LENGTH);
     int num = respond.getInt();
     int len = respond.getInt();
-    int udp_port = respond.getInt();
+    int udpPort = respond.getInt();
     int secretA = respond.getInt();
 
     int num_recived = 0;
 
     try {
+      // Create a socket to receive the message
+      DatagramSocket clientsocket = new DatagramSocket();
       do {
         boolean received = false;
         // Generate the package
@@ -78,8 +83,7 @@ public class Part1 {
         byte[] message = messageComposer(payload.array(), secretA, CLIENT_STEP, STU_ID);
         // Sent message to the server
         while (!received) {
-          DatagramSocket clientsocket = new DatagramSocket();
-          DatagramPacket packet = new DatagramPacket(message, message.length, InetAddress.getByName(HOST), udp_port);
+          DatagramPacket packet = new DatagramPacket(message, message.length, InetAddress.getByName(HOST), udpPort);
           clientsocket.send(packet);
           clientsocket.setSoTimeout(RESEND_TIMEOUT);
           // Receive message from the server
@@ -95,8 +99,8 @@ public class Part1 {
           // Parse the message
           ByteBuffer respondBuffer = ByteBuffer.wrap(receiveBuffer);
           respondBuffer.position(HEADER_LENGTH);
-          int packet_id_recived = respondBuffer.getInt();
-          if (packet_id_recived == num_recived) { // If the packet is the one we want
+          int packetIdRecived = respondBuffer.getInt();
+          if (packetIdRecived == num_recived) { // If the packet is the one we want
             System.out.println("Received packet " + num_recived);
             received = true;
             num_recived++;
@@ -104,12 +108,24 @@ public class Part1 {
             clientsocket.close();
             throw new Exception("Wrong packet id");
           }
-          clientsocket.close();
         }
       } while (num_recived != num);
+      // Stage B2
+      byte[] receiveBuffer = new byte[HEADER_LENGTH + 16];
+      DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+      clientsocket.receive(receivePacket);
+      clientsocket.close();
+      // Parse the message
+      ByteBuffer respondBuffer = ByteBuffer.wrap(receiveBuffer);
+      respondBuffer.position(HEADER_LENGTH);
+      int tcpPort = respondBuffer.getInt();
+      int secretB = respondBuffer.getInt();
+      System.out.println("tcpPort: " + tcpPort + " secretB: " + secretB);
       System.out.println("Stage B completed !!!!!");
+      return respondBuffer;
     } catch (Exception e) {
       System.out.println(e);
+      return null;
     }
   }
 
@@ -120,9 +136,9 @@ public class Part1 {
 
     try (Socket socket = new Socket(InetAddress.getByName(HOST), tcpPort)) {
       // ? Seems we don't need to send anything to the server?
-//      byte[] message = new byte[HEADER_LENGTH];
-//      OutputStream output = socket.getOutputStream();
-//      output.write(message);
+      byte[] message = new byte[HEADER_LENGTH];
+      OutputStream output = socket.getOutputStream();
+      output.write(message);
       // read from the server
       InputStream input = socket.getInputStream();
       byte[] buff = new byte[HEADER_LENGTH + 16];
@@ -137,7 +153,7 @@ public class Part1 {
       int len2 = response.getInt();
       int secretC = response.getInt();
       char c = response.getChar();
-      System.out.println("num2:" + num2 + " len2:" + len2 + "secretC:" + secretC + "c:" + c);
+      System.out.println("num2: " + num2 + " len2: " + len2 + "secretC: " + secretC + "c: " + c);
       return response;
     } catch (Exception e) {
       System.out.println(e.getMessage());

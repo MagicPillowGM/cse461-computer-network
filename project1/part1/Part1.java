@@ -16,6 +16,9 @@ public class Part1 {
   static final String A1_STRING = "hello world\0";
   static final int A_SECRET = 0;
 
+  static int tcpPort;
+  static Socket tcpSocket;
+
   public static void main(String[] args) {
     System.out.println("Program start:");
     System.out.println("--------------------------------");
@@ -26,8 +29,12 @@ public class Part1 {
     ByteBuffer stageBRsult = stageB(stageAResule);
     System.out.println("--------------------------------");
     System.out.println("Stage C begin:");
-    stageC(stageBRsult);
+    ByteBuffer stageCResult = stageC(stageBRsult);
     System.out.println("--------------------------------");
+    System.out.println("Stage D begin:");
+    stageD(stageCResult);
+    System.out.println("--------------------------------");
+    System.out.println("Program end.");
   }
 
   public static ByteBuffer stageA() {
@@ -118,7 +125,7 @@ public class Part1 {
       // Parse the message
       ByteBuffer respondBuffer = ByteBuffer.wrap(receiveBuffer);
       respondBuffer.position(HEADER_LENGTH);
-      int tcpPort = respondBuffer.getInt();
+      tcpPort = respondBuffer.getInt();
       int secretB = respondBuffer.getInt();
       System.out.println("tcpPort: " + tcpPort + " secretB: " + secretB);
       System.out.println("Stage B completed !!!!!");
@@ -134,14 +141,15 @@ public class Part1 {
     int tcpPort = prevResp.getInt();
     int secretB = prevResp.getInt();
 
-    try (Socket socket = new Socket(InetAddress.getByName(HOST), tcpPort)) {
-      // ? Seems we don't need to send anything to the server?
-      byte[] message = new byte[HEADER_LENGTH];
-      OutputStream output = socket.getOutputStream();
+    try {
+      tcpSocket = new Socket(InetAddress.getByName(HOST), tcpPort);
+      // Sent message to the server
+      byte[] message = messageComposer(new byte[0], secretB, CLIENT_STEP, STU_ID);
+      OutputStream output = tcpSocket.getOutputStream();
       output.write(message);
       // read from the server
-      InputStream input = socket.getInputStream();
-      byte[] buff = new byte[HEADER_LENGTH + 16];
+      InputStream input = tcpSocket.getInputStream();
+      byte[] buff = new byte[HEADER_LENGTH + 14];
       int numRead = input.read(buff);
       while (numRead > 0) {
         numRead = input.read(buff);
@@ -153,11 +161,60 @@ public class Part1 {
       int len2 = response.getInt();
       int secretC = response.getInt();
       char c = response.getChar();
-      System.out.println("num2: " + num2 + " len2: " + len2 + "secretC: " + secretC + "c: " + c);
+      System.out.println("num2: " + num2 + " len2: " + len2 + " secretC: " + secretC + "c: " + c);
+      System.out.println("Stage C completed !!!!!");
       return response;
     } catch (Exception e) {
       System.out.println(e.getMessage());
       return null;
+    }
+  }
+
+  private static void stageD(ByteBuffer prevResp) {
+    prevResp.position(HEADER_LENGTH);
+    int num2 = prevResp.getInt();
+    int len2 = prevResp.getInt();
+    int secretC = prevResp.getInt();
+    char c = prevResp.getChar();
+
+    int numPackageSend = 1;
+
+    try {
+      // Sent message to the server
+
+      while (numPackageSend <= num2) {
+        // Generate the package
+        int payloadSize = len2; // (len2 % 4 == 0) ? len2 : len2 + (4 - len2 % 4);
+        ByteBuffer payload = ByteBuffer.allocate(payloadSize);
+        for (int i = 0; i < payloadSize; i++) {
+          payload.putChar(i, c);
+        }
+        byte[] message = messageComposer(payload.array(), secretC, CLIENT_STEP, STU_ID);
+        System.out.println("packet " + numPackageSend + " content: " + new String(payload.array()));
+        // Sent message to the server
+        OutputStream output = tcpSocket.getOutputStream();
+        output.write(message, 0, message.length);
+        output.flush();
+        System.out.println("Sent packet " + numPackageSend);
+        numPackageSend++;
+      }
+
+      // read from the server
+      InputStream input = tcpSocket.getInputStream();
+      byte[] buff = new byte[HEADER_LENGTH + 4];
+      int numRead = input.read(buff);
+      while (numRead > 0) {
+        numRead = input.read(buff);
+      }
+      tcpSocket.close();
+      // parse response
+      ByteBuffer response = ByteBuffer.wrap(buff);
+      response.position(HEADER_LENGTH);
+      int secretD = response.getInt();
+      System.out.println("secretD: " + secretD);
+      System.out.println("Stage D completed !!!!!");
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
     }
   }
 

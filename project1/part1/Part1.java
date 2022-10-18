@@ -102,7 +102,7 @@ public class Part1 {
             System.out.println("Resend packet " + num_recived);
             continue;
           }
-          // Successfully recived
+          // Successfully received
           // Parse the message
           ByteBuffer respondBuffer = ByteBuffer.wrap(receiveBuffer);
           respondBuffer.position(HEADER_LENGTH);
@@ -160,7 +160,7 @@ public class Part1 {
       int num2 = response.getInt();
       int len2 = response.getInt();
       int secretC = response.getInt();
-      char c = response.getChar();
+      byte c = response.get();
       System.out.println("num2: " + num2 + " len2: " + len2 + " secretC: " + secretC + "c: " + c);
       System.out.println("Stage C completed !!!!!");
       return response;
@@ -175,7 +175,7 @@ public class Part1 {
     int num2 = prevResp.getInt();
     int len2 = prevResp.getInt();
     int secretC = prevResp.getInt();
-    char c = prevResp.getChar();
+    byte c = prevResp.get();
 
     int numPackageSend = 1;
 
@@ -187,7 +187,7 @@ public class Part1 {
         int payloadSize = len2; // (len2 % 4 == 0) ? len2 : len2 + (4 - len2 % 4);
         ByteBuffer payload = ByteBuffer.allocate(payloadSize);
         for (int i = 0; i < payloadSize; i++) {
-          payload.putChar(i, c);
+          payload.put(i, c);
         }
         byte[] message = messageComposer(payload.array(), secretC, CLIENT_STEP, STU_ID);
         System.out.println("packet " + numPackageSend + " content: " + new String(payload.array()));

@@ -84,8 +84,8 @@ public class Part1 {
       do {
         boolean received = false;
         // Generate the package
-        int payloadSize = (len % 4 == 0) ? len : len + (4 - len % 4);
-        ByteBuffer payload = ByteBuffer.allocate(4 + payloadSize);
+//        int payloadSize = (len % 4 == 0) ? len : len + (4 - len % 4);
+        ByteBuffer payload = ByteBuffer.allocate(4 + len);
         payload.putInt(num_recived);
         byte[] message = messageComposer(payload.array(), secretA, CLIENT_STEP, STU_ID);
         // Sent message to the server
@@ -220,9 +220,9 @@ public class Part1 {
 
   // Compose the message following the protocol
   private static byte[] messageComposer(byte[] payload, int secret, short step, short stu_id) {
-    int payloadLength = (payload.length % 4 == 0) ? payload.length : payload.length + (4 - payload.length % 4);
-    ByteBuffer message = ByteBuffer.allocate(HEADER_LENGTH + payloadLength);
-    message.putInt(payloadLength);
+    int buffLen = (payload.length % 4 == 0) ? payload.length : payload.length + (4 - payload.length % 4);
+    ByteBuffer message = ByteBuffer.allocate(HEADER_LENGTH + buffLen);
+    message.putInt(payload.length);
     message.putInt(secret);
     message.putShort(step);
     message.putShort(stu_id);

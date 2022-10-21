@@ -2,6 +2,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class Part1 {
   static final String HOST = "attu2.cs.washington.edu";
@@ -190,7 +191,7 @@ public class Part1 {
           payload.put(i, c);
         }
         byte[] message = messageComposer(payload.array(), secretC, CLIENT_STEP, STU_ID);
-        System.out.println("packet " + numPackageSend + " content: " + new String(payload.array()));
+        System.out.println("packet " + numPackageSend + " content: " + Arrays.toString(payload.array()));
         // Sent message to the server
         OutputStream output = tcpSocket.getOutputStream();
         output.write(message, 0, message.length);

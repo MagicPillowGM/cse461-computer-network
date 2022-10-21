@@ -194,8 +194,8 @@ public class Part1 {
         System.out.println("packet " + numPackageSend + " content: " + Arrays.toString(payload.array()));
         // Sent message to the server
         OutputStream output = tcpSocket.getOutputStream();
-        output.write(message, 0, message.length);
-        output.flush();
+        output.write(message);
+//        output.flush();
         System.out.println("Sent packet " + numPackageSend);
         numPackageSend++;
       }

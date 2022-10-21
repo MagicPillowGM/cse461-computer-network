@@ -182,7 +182,7 @@ public class Part1 {
 
     try {
       // Sent message to the server
-
+      OutputStream output = tcpSocket.getOutputStream();
       while (numPackageSend <= num2) {
         // Generate the package
         int payloadSize = len2; // (len2 % 4 == 0) ? len2 : len2 + (4 - len2 % 4);
@@ -191,9 +191,8 @@ public class Part1 {
           payload.put(i, c);
         }
         byte[] message = messageComposer(payload.array(), secretC, CLIENT_STEP, STU_ID);
-        System.out.println("packet " + numPackageSend + " content: " + Arrays.toString(payload.array()));
+        System.out.println("packet " + numPackageSend + " content: " + Arrays.toString(message));
         // Sent message to the server
-        OutputStream output = tcpSocket.getOutputStream();
         output.write(message);
 //        output.flush();
         System.out.println("Sent packet " + numPackageSend);

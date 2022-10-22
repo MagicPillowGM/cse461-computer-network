@@ -1,3 +1,5 @@
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
@@ -40,7 +42,6 @@ public class Part1 {
 
   public static ByteBuffer stageA() {
     int num, len, udpPort, secretA;
-    num = len = udpPort = secretA = -1;
 
     try {
       // Sent message to the server
@@ -85,7 +86,6 @@ public class Part1 {
       do {
         boolean received = false;
         // Generate the package
-//        int payloadSize = (len % 4 == 0) ? len : len + (4 - len % 4);
         ByteBuffer payload = ByteBuffer.allocate(4 + len);
         payload.putInt(num_recived);
         byte[] message = messageComposer(payload.array(), secretA, CLIENT_STEP, STU_ID);
@@ -143,18 +143,12 @@ public class Part1 {
     int secretB = prevResp.getInt();
 
     try {
+      // create TCP connection
       tcpSocket = new Socket(InetAddress.getByName(HOST), tcpPort);
-      // Sent message to the server
-      byte[] message = messageComposer(new byte[0], secretB, CLIENT_STEP, STU_ID);
-      OutputStream output = tcpSocket.getOutputStream();
-      output.write(message);
       // read from the server
       InputStream input = tcpSocket.getInputStream();
-      byte[] buff = new byte[HEADER_LENGTH + 14];
-      int numRead = input.read(buff);
-      while (numRead > 0) {
-        numRead = input.read(buff);
-      }
+      byte[] buff = new byte[HEADER_LENGTH + 16];
+      input.read(buff, 0, buff.length);
       // parse response
       ByteBuffer response = ByteBuffer.wrap(buff);
       response.position(HEADER_LENGTH);
@@ -185,7 +179,7 @@ public class Part1 {
       OutputStream output = tcpSocket.getOutputStream();
       while (numPackageSend <= num2) {
         // Generate the package
-        int payloadSize = len2; // (len2 % 4 == 0) ? len2 : len2 + (4 - len2 % 4);
+        int payloadSize = len2;
         ByteBuffer payload = ByteBuffer.allocate(payloadSize);
         for (int i = 0; i < payloadSize; i++) {
           payload.put(i, c);
@@ -194,7 +188,6 @@ public class Part1 {
         System.out.println("packet " + numPackageSend + " content: " + Arrays.toString(message));
         // Sent message to the server
         output.write(message);
-//        output.flush();
         System.out.println("Sent packet " + numPackageSend);
         numPackageSend++;
       }
@@ -202,10 +195,7 @@ public class Part1 {
       // read from the server
       InputStream input = tcpSocket.getInputStream();
       byte[] buff = new byte[HEADER_LENGTH + 4];
-      int numRead = input.read(buff);
-      while (numRead > 0) {
-        numRead = input.read(buff);
-      }
+      input.read(buff, 0, buff.length);
       tcpSocket.close();
       // parse response
       ByteBuffer response = ByteBuffer.wrap(buff);

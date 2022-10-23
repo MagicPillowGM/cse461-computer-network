@@ -12,6 +12,7 @@ public class Server {
     static final short SERVER_STEP = 2;
     // static final short STU_ID = 397;
     static final int RESEND_TIMEOUT = 1000;
+    static final int CLOSE_TIMEOUT = 3000;
 
     static final String A1_STRING = "hello world\0";
     static final int A_SECRET = 0;
@@ -87,7 +88,7 @@ public class Server {
             }
             ByteBuffer clientBuff = ByteBuffer.wrap(clientStageA);
             stuID = clientBuff.getShort(HEADER_LENGTH - 2);
-            // make response
+            // make payload
             Random numRand = new Random(NUM_RANGE);
             Random portRand = new Random(PORT_RANGE);
             int num = numRand.nextInt();
@@ -99,16 +100,18 @@ public class Server {
             payload.putInt(len);
             payload.putInt(udpPort);
             payload.putInt(secretA);
+            // compose response
             byte[] buff = messageComposer(payload.array(), A_SECRET, SERVER_STEP, stuID);
             DatagramPacket response = new DatagramPacket(buff, buff.length,
                     stageAPacket.getAddress(), stageAPacket.getPort());
             try {
+                // send response
                 this.stageASocket.send(response);
                 return new int[] { num, len, udpPort, secretA };
             } catch (IOException ioe) {
                 ioe.printStackTrace();
             } finally {
-
+                stageASocket.close();
             }
             return null;
         }

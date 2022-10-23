@@ -19,12 +19,14 @@ public class Server {
 
     static final int B_SECRET = 0;
 
+    static final int C_SECRET = 0;
+
     // static ServerSocket variable
     // private static ServerSocket server;
     //
     // private static DatagramSocket udpSocket;
 
-    private static InetAddress clientAdd = null; // client address
+    // private static InetAddress clientAdd = null; // client address
 
     public static void main(String[] args) {
         DatagramSocket datagramSocket = null;
@@ -83,6 +85,8 @@ public class Server {
 
         public int[] stageA() {
             // TODO: validate clientStageA
+            // Header of packet from Client A contains: payload len, secretA, client Step,
+            // stu_id, hello_world string as payload content.
             if (!verifyMessage(clientStageA, A1_STRING.getBytes().length, A_SECRET, stuID)) {
                 return null;
             }
@@ -134,6 +138,8 @@ public class Server {
                 // pass this packet
                 if (!ack) {
                     continue;
+                    // Header of packet from Client B contains: payload len = 4 byte, secretA,
+                    // client Step, stu_id, num_recived integer as payload content.
                 } else if (!verifyMessage(clientStageB, len + 4, A_SECRET, stuID)) {
                     break;
                 } else {
@@ -177,7 +183,7 @@ public class Server {
             return null;
         }
 
-        public boolean stageC() {
+        public int[] stageC() {
             // tcpPort are result from stage B
             ServerSocket tcpSocket = new ServerSocket(tcpPort);
             tcpSocket.setSoTimeout(10000);
@@ -199,16 +205,26 @@ public class Server {
 
             try {
                 out.write(message);
-                return true;
+                return new int[] { num2, len2, secretC };
             } catch (IOException ioe) {
                 ioe.printStackTrace();
             } finally {
 
             }
-            return false;
+            return null;
         }
 
         public boolean stageD() {
+            // read message from client
+            InputStream input = tcpSocket.getInputStream();
+            // header length + length of integer variable, len2 from satge 3
+            byte[] buff = new byte[HEADER_LENGTH + 4];
+            input.read(buff, 0, buff.length);
+            // Header from Client contain payload len, secretC , client step, stuID, payload
+            // of an integer
+            if (!verifyMessage(buff, 4, C_SECRET, stuID)) {
+                return false;
+            }
 
             // step D-2
             OutputStream out = tcpServer.getOutputStream();
@@ -276,7 +292,8 @@ public class Server {
             return message.array();
         }
 
-        // verify the header of every packet received
+        // verify the header of every packet received, did not veirfy payload contengt
+        // yet.
         private static boolean verifyMessage(byte[] packet, int payloadLenth, int secretNum, int stu_id) {
             // Verify header information
             ByteBuffer cliRespond = ByteBuffer.wrap(packet);

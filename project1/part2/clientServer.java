@@ -54,17 +54,19 @@ public class clientServer {
     }
 
     private static boolean verifyMessage(byte[] packet, int msgLenth, int secretNum) {
+        // Verify header information
         ByteBuffer cliRespond = ByteBuffer.wrap(packet);
-        cliRespond.position(HEADER_LENGTH);
-        int expectedLength = HEADER_LENGTH + msgLenth;
         int payloadLen = cliRespond.getInt();
-        int secret = cliRespond.getInt();
-        int step = cliRespond.getInt();
-        int stuID = cliRespond.getInt();
-        // String payload = cliRespond.getBytes();
+        int packetSecret = cliRespond.getInt();
+        short clientStep = cliRespond.getShort();
+        short stuID = cliRespond.getShort();
 
-        return (expectedLength != receiveBuffer || payloadLen != msgLenth || secret != secretNum
-                || step != CLIENT_STEP || stuID != STU_ID);
+        // at this point, buffer should be pointing at msg payload.
+        // cliRespond.position(HEADER_LENGTH);
+        int expectedLength = HEADER_LENGTH + msgLenth;
+
+        return (expectedLength != packet.length || payloadLen != msgLenth || packetSecret != secretNum
+                || clientStep != CLIENT_STEP || stuID != STU_ID);
     }
 
     public static void main(String args[]) {

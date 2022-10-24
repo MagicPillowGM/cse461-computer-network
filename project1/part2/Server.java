@@ -5,8 +5,10 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class Server {
-    static final boolean DEBUG = true;
+    // TODO: Change DEBUG to false before submitting
+    static final boolean DEBUG = false;
     static final int UDP_PORT = DEBUG ? 12281 : 12235;
+
     static final int HEADER_LENGTH = 12;
     static final short CLIENT_STEP = 1;
     static final short SERVER_STEP = 2;

@@ -5,10 +5,13 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class Part1 {
-  static final boolean DEBUG = true;
-  static final String HOST = "attu4.cs.washington.edu";
-  static final int PORT = DEBUG ? 12281 : 12235;
+  // TODO: Change DEBUG to false before submitting
+  // For testing our server:
+  // change the "testing server" to the address of the server address
+  static final boolean DEBUG = false;
+  static final String HOST = DEBUG ? "testing server" : "attu2.cs.washington.edu";
 
+  static final int PORT = DEBUG ? 12281 : 12235;
   static final int HEADER_LENGTH = 12;
   static final short CLIENT_STEP = 1;
   static final short SERVER_STEP = 2;

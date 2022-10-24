@@ -4,14 +4,13 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class Server {
-    static final int UDP_PORT = 12281;//12235;
+    static final int UDP_PORT = 12281;// 12235;
     static final int HEADER_LENGTH = 12;
     static final short CLIENT_STEP = 1;
     static final short SERVER_STEP = 2;
     static final int TIMEOUT = 3000;
     static final String A1_STRING = "hello world\0";
     static final int A_SECRET = 0;
-    static short SID;  // we already have one in ClientHandler ?
 
     public static void main(String[] args) {
         DatagramSocket serverSocket = null;
@@ -19,7 +18,7 @@ public class Server {
             // create ServerSocket
             InetAddress hostAddress = InetAddress.getLocalHost();
             serverSocket = new DatagramSocket(UDP_PORT, hostAddress);
-            serverSocket.setSoTimeout(TIMEOUT);
+            // serverSocket.setSoTimeout(TIMEOUT);
             // keep listening to client's UDP packet of stage A
             while (true) {
                 byte[] buff = new byte[HEADER_LENGTH + A1_STRING.length()];
@@ -28,13 +27,13 @@ public class Server {
                 ClientHandler handler = new ClientHandler(serverSocket, clientPacket, buff);
                 new Thread(handler).start();
             }
-        }catch (Exception e) {
-            if (serverSocket != null){serverSocket.close();}
+        } catch (Exception e) {
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
             e.printStackTrace();
         }
     }
-
-
 
     private static class ClientHandler implements Runnable {
         private static final int NUM_RANGE = 32;
@@ -59,9 +58,13 @@ public class Server {
         }
 
         public int[] stageA() {
+            System.out.println("recived stageA");
             // TODO: validate clientStageA
             if (!verifyMessage2(stageABuff, stageABuff.length, A1_STRING.length(), A_SECRET,
-                    CLIENT_STEP, SID, A1_STRING.getBytes())) {return null;}
+                    CLIENT_STEP, A1_STRING.getBytes())) {
+                System.out.println("not valid!!!!");
+                return null;
+            }
             ByteBuffer clientBuff = ByteBuffer.wrap(stageABuff);
             stuID = clientBuff.getShort(HEADER_LENGTH - 2);
             // make payload
@@ -114,7 +117,7 @@ public class Server {
                     // listen for client
                     byte[] clientBuff = new byte[expectedMsgLen];
                     DatagramPacket clientPacket = new DatagramPacket(clientBuff, clientBuff.length);
-                    datagramSocket.receive(clientPacket);  // block until receive
+                    datagramSocket.receive(clientPacket); // block until receive
 
                     // after receive
                     // get pacId
@@ -122,7 +125,9 @@ public class Server {
                     clientBuffer.position(HEADER_LENGTH);
                     int pacId = clientBuffer.getInt();
                     // verify packet
-                    if (numReceived != pacId || !verifyMessage(clientBuff, len, pSecret, stuID)) {  // TODO: verifyMessage specify input
+                    if (numReceived != pacId || !verifyMessage(clientBuff, len, pSecret, stuID)) { // TODO:
+                                                                                                   // verifyMessage
+                                                                                                   // specify input
                         datagramSocket.close();
                         break;
                     }
@@ -132,7 +137,8 @@ public class Server {
                         // make payload
                         ByteBuffer payload = ByteBuffer.allocate(4);
                         payload.putInt(pacId);
-                        byte[] buff = messageComposer(payload.array(), pSecret, SERVER_STEP, stuID);  // ? server or client step
+                        byte[] buff = messageComposer(payload.array(), pSecret, SERVER_STEP, stuID); // ? server or
+                                                                                                     // client step
                         DatagramPacket response = new DatagramPacket(buff, buff.length,
                                 clientPacket.getAddress(), clientPacket.getPort());
                         datagramSocket.send(response);
@@ -168,7 +174,7 @@ public class Server {
         }
 
         public int[] stageC(int[] resultB) {
-            int tcpPort = resultB[0];  // tcpPort are result from stage B
+            int tcpPort = resultB[0]; // tcpPort are result from stage B
             int pSecret = resultB[1];
             try {
                 tcpSocketCD = new ServerSocket(tcpPort);
@@ -197,24 +203,24 @@ public class Server {
             return null;
         }
 
-//        public boolean stageD() {
-//            try {
-//                OutputStream out = tcpServer.getOutputStream();
-//                Random numRandom = new Random(PORT_RANGE);
-//                // preparing the message
-//                int secretD = numRandom.nextInt();
-//                ByteBuffer payload = ByteBuffer.allocate(4);
-//                payload.putInt(secretD);
-//                byte[] message = messageComposer(payload.array(), secretD, SERVER_STEP, stuID);
-//                out.write(message);
-//                return true;
-//            } catch (Exception e) {
-//                System.out.println(e);
-//
-//            }
-//            // step D-2
-//        }
-
+        // public boolean stageD() {
+        // try {
+        // OutputStream out = tcpServer.getOutputStream();
+        // Random numRandom = new Random(PORT_RANGE);
+        // // preparing the message
+        // int secretD = numRandom.nextInt();
+        // ByteBuffer payload = ByteBuffer.allocate(4);
+        // payload.putInt(secretD);
+        // byte[] message = messageComposer(payload.array(), secretD, SERVER_STEP,
+        // stuID);
+        // out.write(message);
+        // return true;
+        // } catch (Exception e) {
+        // System.out.println(e);
+        //
+        // }
+        // // step D-2
+        // }
 
         // Compose the message following the protocol
         private static byte[] messageComposer(byte[] payload, int secret, short step, short stu_id) {
@@ -228,27 +234,43 @@ public class Server {
             return message.array();
         }
 
-        private static boolean verifyMessage2 (byte[] data, int dataLen, int expPayLen,
-                                               int expSecret, int expStep, int expSid, byte[] expPay) {
+        private static boolean verifyMessage2(byte[] data, int dataLen, int expPayLen,
+                int expSecret, int expStep, byte[] expPay) {
             // verify total (padded) length including header
             int padding = expPayLen % 4 == 0 ? 0 : 4 - expPayLen % 4;
-            int expPadLen = 4 + expPayLen + padding;
-            if (expPadLen != dataLen) return false;
+            int expPadLen = expPayLen + padding;
+            if (expPadLen + HEADER_LENGTH != dataLen) {
+                System.out.print("expPadLen: " + expPadLen + "  dataLen: " + dataLen);
+                System.out.println();
+                System.out.println("padding not valid.");
+                return false;
+            }
             // Get byte buffer
             ByteBuffer buf = ByteBuffer.wrap(data);
             // verify header contents
-            if (buf.getInt() != expPayLen ||    // unpadded payload len
-                    buf.getInt() != expSecret ||    // secret
-                    buf.getShort() != expStep ||    // step
-                    buf.getShort() != expSid)        // SID
+            boolean paylen = buf.getInt() != expPayLen;
+            boolean secret = buf.getInt() != expSecret;
+            boolean step = buf.getShort() != expStep;
+            short stu_id = buf.getShort();
+            if (paylen || secret || step) {
+                System.out.println("Paylen: " + paylen + "  secret: " + secret + "  step: " + step);
+                System.out.println("header not valid.");
                 return false;
+            }
+
             // verify payload
             for (int i = 0; i < expPayLen; i++) {
-                if (buf.get() != expPay[i]) return false;
+                if (buf.get() != expPay[i]) {
+                    System.out.println("payload not valid.");
+                    return false;
+                }
             }
             // verify padding
-            for (int i = 0; i < padding; i++){
-                if (buf.get() != 0) return false;
+            for (int i = 0; i < padding; i++) {
+                if (buf.get() != 0) {
+                    System.out.println("payload padding not valid.");
+                    return false;
+                }
             }
             return true;
         }

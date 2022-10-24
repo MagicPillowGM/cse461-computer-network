@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public class Part1 {
   static final boolean DEBUG = true;
-  static final String HOST = "attu5.cs.washington.edu";
+  static final String HOST = "attu4.cs.washington.edu";
   static final int PORT = DEBUG ? 12281 : 12235;
 
   static final int HEADER_LENGTH = 12;
@@ -22,21 +22,26 @@ public class Part1 {
   static Socket tcpSocket;
 
   public static void main(String[] args) throws Exception {
-    System.out.println("Program start:");
-    System.out.println("--------------------------------");
-    System.out.println("Stage A begin:");
-    ByteBuffer stageAResule = stageA();
-    System.out.println("--------------------------------");
-    System.out.println("Stage B begin:");
-    ByteBuffer stageBRsult = stageB(stageAResule);
-    System.out.println("--------------------------------");
-    System.out.println("Stage C begin:");
-    ByteBuffer stageCResult = stageC(stageBRsult);
-    System.out.println("--------------------------------");
-    System.out.println("Stage D begin:");
-    stageD(stageCResult);
-    System.out.println("--------------------------------");
-    System.out.println("Program end.");
+    try {
+      System.out.println("Program start:");
+      System.out.println("--------------------------------");
+      System.out.println("Stage A begin:");
+      ByteBuffer stageAResule = stageA();
+      System.out.println("--------------------------------");
+      System.out.println("Stage B begin:");
+      ByteBuffer stageBRsult = stageB(stageAResule);
+      System.out.println("--------------------------------");
+      System.out.println("Stage C begin:");
+      ByteBuffer stageCResult = stageC(stageBRsult);
+      System.out.println("--------------------------------");
+      System.out.println("Stage D begin:");
+      stageD(stageCResult);
+      System.out.println("--------------------------------");
+      System.out.println("Program end.");
+    } catch (Exception e) {
+      System.out.println("Exception: " + e.getMessage());
+      e.getStackTrace();
+    }
   }
 
   public static ByteBuffer stageA() throws Exception {
@@ -139,7 +144,6 @@ public class Part1 {
   public static ByteBuffer stageC(ByteBuffer prevResp) throws Exception {
     prevResp.position(HEADER_LENGTH);
     int tcpPort = prevResp.getInt();
-    int secretB = prevResp.getInt();
 
     try {
       // create TCP connection

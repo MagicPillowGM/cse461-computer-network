@@ -5,14 +5,14 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class Part1 {
-  static final String HOST = "attu5.cs.washington.edu";
+  static final String HOST = "attu2.cs.washington.edu";
   static final int PORT = 12281;
 
   static final int HEADER_LENGTH = 12;
   static final short CLIENT_STEP = 1;
   static final short SERVER_STEP = 2;
   static final short STU_ID = 397;
-  static final int RESEND_TIMEOUT = 1000;
+  static final int RESEND_TIMEOUT = 500;
 
   static final String A1_STRING = "hello world\0";
   static final int A_SECRET = 0;

@@ -1,1 +1,1 @@
-Member Name: George Ma, Linden Gan (lg57)
+Member Name: George Ma, Linden Gan (lg57), Kenny Mai

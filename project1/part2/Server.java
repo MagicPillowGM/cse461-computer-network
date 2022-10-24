@@ -4,70 +4,48 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class Server {
-    static final int UDP_PORT = 12235;
-    static final String HOST = "attu2.cs.washington.edu";
-
+    static final int UDP_PORT = 12281;//12235;
     static final int HEADER_LENGTH = 12;
     static final short CLIENT_STEP = 1;
     static final short SERVER_STEP = 2;
-    // static final short STU_ID = 397;
-    static final int RESEND_TIMEOUT = 1000;
-    static final int CLOSE_TIMEOUT = 3000;
-
+    static final int TIMEOUT = 3000;
     static final String A1_STRING = "hello world\0";
     static final int A_SECRET = 0;
-
-    static final int B_SECRET = 0;
-
-    // static ServerSocket variable
-    // private static ServerSocket server;
-    //
-    // private static DatagramSocket udpSocket;
-
-    private static InetAddress clientAdd = null; // client address
+    static short SID;  // we already have one in ClientHandler ?
 
     public static void main(String[] args) {
-        DatagramSocket datagramSocket = null;
+        DatagramSocket serverSocket = null;
         try {
-            // create DatagramSocket and bind
-            datagramSocket = new DatagramSocket(UDP_PORT);
-            datagramSocket.setReuseAddress(true);
+            // create ServerSocket
+            InetAddress hostAddress = InetAddress.getLocalHost();
+            serverSocket = new DatagramSocket(UDP_PORT, hostAddress);
+            serverSocket.setSoTimeout(TIMEOUT);
             // keep listening to client's UDP packet of stage A
             while (true) {
                 byte[] buff = new byte[HEADER_LENGTH + A1_STRING.length()];
                 DatagramPacket clientPacket = new DatagramPacket(buff, buff.length);
-                datagramSocket.receive(clientPacket); // block until receive
-
-                ClientHandler handler = new ClientHandler(datagramSocket, clientPacket, buff);
+                serverSocket.receive(clientPacket); // block until receive
+                ClientHandler handler = new ClientHandler(serverSocket, clientPacket, buff);
                 new Thread(handler).start();
-
             }
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        } finally {
-            if (datagramSocket != null) {
-                datagramSocket.close();
-            }
+        }catch (Exception e) {
+            if (serverSocket != null){serverSocket.close();}
+            e.printStackTrace();
         }
     }
 
-    private static class ClientHandler implements Runnable {
-        public static final int NUM_RANGE = 32;
-        public static final int PORT_RANGE = 65536;
 
-        private final DatagramSocket stageASocket;
-        private final DatagramPacket stageAPacket;
-        private final byte[] clientStageA;
+
+    private static class ClientHandler implements Runnable {
+        private static final int NUM_RANGE = 32;
+        private static final int PORT_RANGE = 65536;
+
+        private final DatagramSocket udpSocketA;
+        private final DatagramPacket clientPacketA;
+        private final byte[] stageABuff;
         private short stuID;
 
         private ServerSocket tcpSocketCD;
-
-        private final DatagramSocket stageBSocket;
-        private final DatagramPacket stageBPacket;
-        private final byte[] clientStageB;
-
-        // private final Socket stageCSocket;
-        // private final byte[] clientStageC;
 
         public ClientHandler(DatagramSocket socket, DatagramPacket packet, byte[] buff) {
             this.udpSocketA = socket;
@@ -75,12 +53,16 @@ public class Server {
             this.stageABuff = buff;
         }
 
+        public void run() {
+            int[] resultA = stageA();
+            int[] resultB = stageB(resultA);
+        }
+
         public int[] stageA() {
             // TODO: validate clientStageA
-            if (!verifyMessage(clientStageA, A1_STRING.getBytes().length, A_SECRET, stuID)) {
-                return null;
-            }
-            ByteBuffer clientBuff = ByteBuffer.wrap(clientStageA);
+            if (!verifyMessage2(stageABuff, stageABuff.length, A1_STRING.length(), A_SECRET,
+                    CLIENT_STEP, SID, A1_STRING.getBytes())) {return null;}
+            ByteBuffer clientBuff = ByteBuffer.wrap(stageABuff);
             stuID = clientBuff.getShort(HEADER_LENGTH - 2);
             // make payload
             Random numRand = new Random(NUM_RANGE);
@@ -97,15 +79,15 @@ public class Server {
             // compose response
             byte[] buff = messageComposer(payload.array(), A_SECRET, SERVER_STEP, stuID);
             DatagramPacket response = new DatagramPacket(buff, buff.length,
-                    stageAPacket.getAddress(), stageAPacket.getPort());
+                    clientPacketA.getAddress(), clientPacketA.getPort());
             try {
                 // send response
-                this.stageASocket.send(response);
+                this.udpSocketA.send(response);
                 return new int[] { num, len, udpPort, secretA };
             } catch (IOException ioe) {
                 ioe.printStackTrace();
             } finally {
-                stageASocket.close();
+                udpSocketA.close();
             }
             return null;
         }
@@ -185,50 +167,53 @@ public class Server {
             return null;
         }
 
-        public boolean stageC() {
-            // tcpPort are result from stage B
-            ServerSocket tcpSocket = new ServerSocket(tcpPort);
-            tcpSocket.setSoTimeout(10000);
-            Socket tcpServer = tcpSocket.accept();
-            OutputStream out = tcpServer.getOutputStream();
-
-            Random numRandom = new Random(PORT_RANGE);
-            // preparing the message
-            int num2 = numRandom.nextInt();
-            int len2 = numRandom.nextInt();
-            int secretC = numRandom.nextInt();
-            ByteBuffer payload = ByteBuffer.allocate(13);
-            payload.putInt(num2);
-            payload.putInt(len2);
-            payload.putInt(secretC);
-            payload.putChar('c');
-            byte[] message = messageComposer(payload.array(), secretC, SERVER_STEP, stuID);
-            out.write(message);
-
+        public int[] stageC(int[] resultB) {
+            int tcpPort = resultB[0];  // tcpPort are result from stage B
+            int pSecret = resultB[1];
             try {
+                tcpSocketCD = new ServerSocket(tcpPort);
+                tcpSocketCD.setSoTimeout(TIMEOUT);
+                tcpSocketCD.setReuseAddress(true);
+                Socket tcpServer = tcpSocketCD.accept();
+                OutputStream out = tcpServer.getOutputStream();
+
+                Random numRandom = new Random(PORT_RANGE);
+                // preparing the message
+                int num2 = numRandom.nextInt();
+                int len2 = numRandom.nextInt();
+                int secretC = numRandom.nextInt();
+                ByteBuffer payload = ByteBuffer.allocate(13);
+                payload.putInt(num2);
+                payload.putInt(len2);
+                payload.putInt(secretC);
+                payload.putChar('c');
+                byte[] message = messageComposer(payload.array(), secretC, SERVER_STEP, stuID);
+                out.write(message);
                 out.write(message);
                 return new int[] {};
             } catch (IOException ioe) {
                 ioe.printStackTrace();
-            } finally {
-
             }
             return null;
         }
 
-        public boolean stageD() {
-
-            // step D-2
-            OutputStream out = tcpServer.getOutputStream();
-            Random numRandom = new Random(PORT_RANGE);
-            // preparing the message
-            int secretD = numRandom.nextInt();
-            ByteBuffer payload = ByteBuffer.allocate(4);
-            payload.putInt(secretD);
-            byte[] message = messageComposer(payload.array(), secretD, SERVER_STEP, stuID);
-            out.write(message);
-            return true;
-        }
+//        public boolean stageD() {
+//            try {
+//                OutputStream out = tcpServer.getOutputStream();
+//                Random numRandom = new Random(PORT_RANGE);
+//                // preparing the message
+//                int secretD = numRandom.nextInt();
+//                ByteBuffer payload = ByteBuffer.allocate(4);
+//                payload.putInt(secretD);
+//                byte[] message = messageComposer(payload.array(), secretD, SERVER_STEP, stuID);
+//                out.write(message);
+//                return true;
+//            } catch (Exception e) {
+//                System.out.println(e);
+//
+//            }
+//            // step D-2
+//        }
 
 
         // Compose the message following the protocol
@@ -241,6 +226,31 @@ public class Server {
             message.putShort(stu_id);
             message.put(payload);
             return message.array();
+        }
+
+        private static boolean verifyMessage2 (byte[] data, int dataLen, int expPayLen,
+                                               int expSecret, int expStep, int expSid, byte[] expPay) {
+            // verify total (padded) length including header
+            int padding = expPayLen % 4 == 0 ? 0 : 4 - expPayLen % 4;
+            int expPadLen = 4 + expPayLen + padding;
+            if (expPadLen != dataLen) return false;
+            // Get byte buffer
+            ByteBuffer buf = ByteBuffer.wrap(data);
+            // verify header contents
+            if (buf.getInt() != expPayLen ||    // unpadded payload len
+                    buf.getInt() != expSecret ||    // secret
+                    buf.getShort() != expStep ||    // step
+                    buf.getShort() != expSid)        // SID
+                return false;
+            // verify payload
+            for (int i = 0; i < expPayLen; i++) {
+                if (buf.get() != expPay[i]) return false;
+            }
+            // verify padding
+            for (int i = 0; i < padding; i++){
+                if (buf.get() != 0) return false;
+            }
+            return true;
         }
 
         // verify the header of every packet received

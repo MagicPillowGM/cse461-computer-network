@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Random;
 
 public class Server {
@@ -8,9 +9,14 @@ public class Server {
     static final int HEADER_LENGTH = 12;
     static final short CLIENT_STEP = 1;
     static final short SERVER_STEP = 2;
-    static final int TIMEOUT = 3000;
+    static final int TIMEOUT = 5000;
     static final String A1_STRING = "hello world\0";
     static final int A_SECRET = 0;
+
+    static int num2;
+    static int len2;
+    static int secretC;
+    static byte c;
 
     public static void main(String[] args) {
         DatagramSocket serverSocket = null;
@@ -40,11 +46,12 @@ public class Server {
         private static final int PORT_RANGE = 65536;
 
         private DatagramSocket udpSocketA;
+        private ServerSocket tcpSocketCD;
         private DatagramPacket clientPacketA;
         private final byte[] stageABuff;
         private short stuID;
-
-        private ServerSocket tcpSocketCD;
+        private BufferedOutputStream tcpOutStream;
+        private BufferedInputStream tcpInput;
 
         public ClientHandler(DatagramSocket socket, DatagramPacket packet, byte[] buff) {
             this.udpSocketA = socket;
@@ -56,6 +63,7 @@ public class Server {
             int[] resultA = stageA();
             int[] resultB = stageB(resultA);
             int[] resultC = stageC(resultB);
+            stageD();
         }
 
         public int[] stageA() {
@@ -160,8 +168,8 @@ public class Server {
                 ioe.printStackTrace();
             }
 
+            // after all packets are acknowledged
             try {
-                // after all packets are acknowledged
                 // make response payload
                 Random Rand = new Random();
                 int tcpPort = Rand.nextInt(65535 - 256) + 256;
@@ -196,48 +204,79 @@ public class Server {
                 // tcpSocketCD.setReuseAddress(true);
                 // Socket tcpServer = tcpSocketCD.accept();
                 // OutputStream out = tcpServer.getOutputStream();
-                OutputStream out = tcpSocketCD.accept().getOutputStream();
+                Socket client = tcpSocketCD.accept();
+                tcpOutStream = new BufferedOutputStream(client.getOutputStream());
+                tcpInput = new BufferedInputStream(client.getInputStream());
 
                 Random numRandom = new Random();
                 // preparing the message
-                int num2 = numRandom.nextInt(30);
-                int len2 = numRandom.nextInt(30);
-                int secretC = numRandom.nextInt(100);
-                byte c = (byte) (numRandom.nextInt(94) + 33);
+                num2 = numRandom.nextInt(30);
+                len2 = numRandom.nextInt(30);
+                secretC = numRandom.nextInt(100);
+                c = (byte) (numRandom.nextInt(94) + 33);
                 ByteBuffer payload = ByteBuffer.allocate(13);
                 payload.putInt(num2);
                 payload.putInt(len2);
                 payload.putInt(secretC);
                 payload.put(c);
                 byte[] message = messageComposer(payload.array(), pSecret, SERVER_STEP, stuID);
-                out.write(message);
-                out.flush();
-                ;
-                return new int[] {};
+                tcpOutStream.write(message);
+                tcpOutStream.flush();
+                System.out.println("Stage C complete");
+                return null;
             } catch (IOException ioe) {
                 ioe.printStackTrace();
             }
             return null;
         }
 
-        // public boolean stageD() {
-        // try {
-        // OutputStream out = tcpServer.getOutputStream();
-        // Random numRandom = new Random(PORT_RANGE);
-        // // preparing the message
-        // int secretD = numRandom.nextInt();
-        // ByteBuffer payload = ByteBuffer.allocate(4);
-        // payload.putInt(secretD);
-        // byte[] message = messageComposer(payload.array(), secretD, SERVER_STEP,
-        // stuID);
-        // out.write(message);
-        // return true;
-        // } catch (Exception e) {
-        // System.out.println(e);
-        //
-        // }
-        // // step D-2
-        // }
+        public void stageD() {
+            int paddedPayloadLen = len2 % 4 == 0 ? len2 : len2 + (4 - len2 % 4);
+
+            try {
+                System.out.println("Stage D start");
+                System.out.println("Stage D connected");
+
+                byte[] recivedBuff = new byte[HEADER_LENGTH + paddedPayloadLen];
+                for (int i = 0; i < num2; i++) {
+                    int bytesReceived = tcpInput.read(recivedBuff);
+
+                    byte[] exp_payload = new byte[len2];
+                    Arrays.fill(exp_payload, c);
+                    if (!verifyMessage2(recivedBuff, bytesReceived, len2,
+                            secretC, CLIENT_STEP, exp_payload)) {
+                        System.out.println("Stage D not valid!!!!");
+                        tcpSocketCD.close();
+                        return;
+                    }
+                    System.out.println("recived stageD packet" + i);
+                }
+                System.out.println("Stage D recived all packages!!!!");
+
+                if (tcpInput.available() != 0) {
+                    System.out.println("Too many packets sent");
+                    tcpSocketCD.close();
+                    return;
+                }
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+            // step D-2
+            try {
+                System.out.println("Stage D-2");
+                int secretD = new Random().nextInt(100);
+                byte[] payload = ByteBuffer.allocate(4).putInt(secretD).array();
+                byte[] message = messageComposer(payload, secretC, SERVER_STEP, stuID);
+                tcpOutStream.write(message);
+                tcpOutStream.flush();
+                tcpSocketCD.close();
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                // tcpSocketCD.close();
+            }
+
+        }
 
         // Compose the message following the protocol
         private static byte[] messageComposer(byte[] payload, int secret, short step, short stu_id) {

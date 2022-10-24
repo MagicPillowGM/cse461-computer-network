@@ -191,11 +191,12 @@ public class Server {
             int tcpPort = resultB[0]; // tcpPort are result from stage B
             int pSecret = resultB[1];
             try {
-                tcpSocketCD = new ServerSocket(tcpPort, 1, InetAddress.getLocalHost());
-                tcpSocketCD.setSoTimeout(TIMEOUT);
-                tcpSocketCD.setReuseAddress(true);
-                Socket tcpServer = tcpSocketCD.accept();
-                OutputStream out = tcpServer.getOutputStream();
+                // tcpSocketCD = new ServerSocket(0);
+                // tcpSocketCD.setSoTimeout(TIMEOUT);
+                // tcpSocketCD.setReuseAddress(true);
+                // Socket tcpServer = tcpSocketCD.accept();
+                // OutputStream out = tcpServer.getOutputStream();
+                OutputStream out = tcpSocketCD.accept().getOutputStream();
 
                 Random numRandom = new Random();
                 // preparing the message

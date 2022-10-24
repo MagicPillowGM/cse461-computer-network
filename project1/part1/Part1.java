@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class Part1 {
-  static final String HOST = "attu2.cs.washington.edu";
-  static final int PORT = 12235;
+  static final String HOST = "attu7.cs.washington.edu";
+  static final int PORT = 12281;
 
   static final int HEADER_LENGTH = 12;
   static final short CLIENT_STEP = 1;

@@ -19,14 +19,12 @@ public class Server {
 
     static final int B_SECRET = 0;
 
-    static final int C_SECRET = 0;
-
     // static ServerSocket variable
     // private static ServerSocket server;
     //
     // private static DatagramSocket udpSocket;
 
-    // private static InetAddress clientAdd = null; // client address
+    private static InetAddress clientAdd = null; // client address
 
     public static void main(String[] args) {
         DatagramSocket datagramSocket = null;
@@ -62,6 +60,8 @@ public class Server {
         private final byte[] clientStageA;
         private short stuID;
 
+        private ServerSocket tcpSocketCD;
+
         private final DatagramSocket stageBSocket;
         private final DatagramPacket stageBPacket;
         private final byte[] clientStageB;
@@ -70,23 +70,13 @@ public class Server {
         // private final byte[] clientStageC;
 
         public ClientHandler(DatagramSocket socket, DatagramPacket packet, byte[] buff) {
-            this.stageASocket = socket;
-            this.stageAPacket = packet;
-            this.clientStageA = buff;
-
-            // Stage B
-            this.stageBSocket = socket;
-            this.stageBPacket = packet;
-            this.clientStageB = buff;
-
-            // stafe C
-
+            this.udpSocketA = socket;
+            this.clientPacketA = packet;
+            this.stageABuff = buff;
         }
 
         public int[] stageA() {
             // TODO: validate clientStageA
-            // Header of packet from Client A contains: payload len, secretA, client Step,
-            // stu_id, hello_world string as payload content.
             if (!verifyMessage(clientStageA, A1_STRING.getBytes().length, A_SECRET, stuID)) {
                 return null;
             }
@@ -120,7 +110,12 @@ public class Server {
             return null;
         }
 
-        public int[] stageB() {
+        public int[] stageB(int[] resultA) {
+            int len = resultA[1];
+            int num = resultA[0];
+            int newPort = resultA[2];
+            int pSecret = resultA[3];
+
             // variable num, len, udpPort are result from stage A.
             int expectedPayloadLen = len + 4;
             expectedPayloadLen = (expectedPayloadLen % 4 == 0) ? expectedPayloadLen
@@ -128,62 +123,69 @@ public class Server {
             int expectedMsgLen = HEADER_LENGTH + expectedPayloadLen;
 
             Random boolRand = new Random();
-            int numReceived = 0;
-            clientStageB = new byte[expectedMsgLen];
-            while (numReceived < num) {
-                stageBPacket = new DatagramPacket(clientStageB, clientStageB.length);
-                stageASocket.receive(stageBPacket);
-
-                boolean ack = boolRand.nextBoolean();
-                // pass this packet
-                if (!ack) {
-                    continue;
-                    // Header of packet from Client B contains: payload len = 4 byte, secretA,
-                    // client Step, stu_id, num_recived integer as payload content.
-                } else if (!verifyMessage(clientStageB, len + 4, A_SECRET, stuID)) {
-                    break;
-                } else {
-                    // send the ack id packet back to client.
-                    ByteBuffer payload = ByteBuffer.allocate(4);
-                    // acked_packet_id
-                    payload.putInt(numReceived);
-                    byte[] buff = messageComposer(payload.array(), B_SECRET, SERVER_STEP, stuID);
-                    DatagramPacket response = new DatagramPacket(buff, buff.length,
-                            stageBPacket.getAddress(), stageBPacket.getPort());
-                    try {
-                        this.stageASocket.send(response);
-                    } catch (IOException ioe) {
-                        ioe.printStackTrace();
-                    } finally {
-
-                    }
-                    numReceived++;
-                }
-
-            }
-
-            Random portRand = new Random(PORT_RANGE);
-
-            int tcpPort = portRand.nextInt();
-            int secretB = portRand.nextInt();
-            ByteBuffer payload = ByteBuffer.allocate(8);
-            payload.putInt(tcpPort);
-            payload.putInt(secretB);
-            byte[] buff = messageComposer(payload.array(), B_SECRET, SERVER_STEP, stuID);
-            DatagramPacket response = new DatagramPacket(buff, buff.length,
-                    stageBPacket.getAddress(), stageBPacket.getPort());
+            DatagramSocket datagramSocket = null;
             try {
-                this.stageASocket.send(response);
-                return new int[] { tcpPort, secretB };
+                datagramSocket = new DatagramSocket(newPort);
+                datagramSocket.setReuseAddress(true);
+                int numReceived = 0;
+                while (numReceived < num) {
+                    // listen for client
+                    byte[] clientBuff = new byte[expectedMsgLen];
+                    DatagramPacket clientPacket = new DatagramPacket(clientBuff, clientBuff.length);
+                    datagramSocket.receive(clientPacket);  // block until receive
+
+                    // after receive
+                    // get pacId
+                    ByteBuffer clientBuffer = ByteBuffer.wrap(clientBuff);
+                    clientBuffer.position(HEADER_LENGTH);
+                    int pacId = clientBuffer.getInt();
+                    // verify packet
+                    if (numReceived != pacId || !verifyMessage(clientBuff, len, pSecret, stuID)) {  // TODO: verifyMessage specify input
+                        datagramSocket.close();
+                        break;
+                    }
+                    // then randomly decide
+                    boolean ack = boolRand.nextBoolean();
+                    if (ack) {
+                        // make payload
+                        ByteBuffer payload = ByteBuffer.allocate(4);
+                        payload.putInt(pacId);
+                        byte[] buff = messageComposer(payload.array(), pSecret, SERVER_STEP, stuID);  // ? server or client step
+                        DatagramPacket response = new DatagramPacket(buff, buff.length,
+                                clientPacket.getAddress(), clientPacket.getPort());
+                        datagramSocket.send(response);
+                        numReceived++;
+                    }
+
+                    if (numReceived == num) {
+                        // after all packets are acknowledged
+                        // make response payload
+                        Random portRand = new Random(PORT_RANGE);
+                        int tcpPort = portRand.nextInt();
+                        int secretB = portRand.nextInt();
+                        ByteBuffer payload = ByteBuffer.allocate(8);
+                        payload.putInt(tcpPort);
+                        payload.putInt(secretB);
+                        // compose response packet
+                        byte[] buff = messageComposer(payload.array(), pSecret, SERVER_STEP, stuID);
+                        DatagramPacket response = new DatagramPacket(buff, buff.length,
+                                clientPacket.getAddress(), clientPacket.getPort());
+                        datagramSocket.send(response);
+                        datagramSocket.close();
+                        return new int[] { tcpPort, secretB };
+                    }
+                }
             } catch (IOException ioe) {
                 ioe.printStackTrace();
             } finally {
-
+                if (datagramSocket != null) {
+                    datagramSocket.close();
+                }
             }
             return null;
         }
 
-        public int[] stageC() {
+        public boolean stageC() {
             // tcpPort are result from stage B
             ServerSocket tcpSocket = new ServerSocket(tcpPort);
             tcpSocket.setSoTimeout(10000);
@@ -205,7 +207,7 @@ public class Server {
 
             try {
                 out.write(message);
-                return new int[] { num2, len2, secretC };
+                return new int[] {};
             } catch (IOException ioe) {
                 ioe.printStackTrace();
             } finally {
@@ -215,16 +217,6 @@ public class Server {
         }
 
         public boolean stageD() {
-            // read message from client
-            InputStream input = tcpSocket.getInputStream();
-            // header length + length of integer variable, len2 from satge 3
-            byte[] buff = new byte[HEADER_LENGTH + 4];
-            input.read(buff, 0, buff.length);
-            // Header from Client contain payload len, secretC , client step, stuID, payload
-            // of an integer
-            if (!verifyMessage(buff, 4, C_SECRET, stuID)) {
-                return false;
-            }
 
             // step D-2
             OutputStream out = tcpServer.getOutputStream();
@@ -238,47 +230,6 @@ public class Server {
             return true;
         }
 
-        public void run() {
-
-            // Random rand = new Random();
-            //
-            // while (true) {
-            // // Stage A receive and send udp packet to client.
-            //
-            // // receive packet from client
-            // byte[] receiveBuffer = new byte[1024];
-            // DatagramPacket packet = new DatagramPacket(receiveBuffer,
-            // receiveBuffer.length);
-            // udpSocket.receive(packet);
-            //
-            // ByteBuffer cliRespond = ByteBuffer.wrap(receiveBuffer);
-            // cliRespond.position(HEADER_LENGTH);
-            // int msgLenth = A1_STRING.getBytes().length;
-            // int expectedLength = HEADER_LENGTH + msgLenth;
-            // int payloadLen = respond.getInt();
-            // int secret = respond.getInt();
-            // int step = respond.getInt();
-            // int stuID = respond.getInt();
-            // String payload = respond.getBytes();
-            //
-            // // checking buffer length
-            // if (expectedLength != receiveBuffer || payloadLen != msgLenth || secret !=
-            // A_SECRET
-            // || step != CLIENT_STEP || stuID != STU_ID) {
-            // return;
-            // }
-            //
-            // // preparing msg to send to client
-            // int num = rand.nextInt();
-            // int len = rand.nextInt();
-            // int udpPort = rand.nextInt();
-            // int secretA = rand.nextInt();
-            // byte[] sendBuffer = messageComposer(16, num, len, udpPort, secretA);
-            // packet = new DatagramPacket(sendBuffer, sendBuffer.length);
-            // udpSocket.send(packet);
-            // udpSocket.close();
-            // }
-        }
 
         // Compose the message following the protocol
         private static byte[] messageComposer(byte[] payload, int secret, short step, short stu_id) {
@@ -292,8 +243,7 @@ public class Server {
             return message.array();
         }
 
-        // verify the header of every packet received, did not veirfy payload contengt
-        // yet.
+        // verify the header of every packet received
         private static boolean verifyMessage(byte[] packet, int payloadLenth, int secretNum, int stu_id) {
             // Verify header information
             ByteBuffer cliRespond = ByteBuffer.wrap(packet);

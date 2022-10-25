@@ -5,9 +5,13 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class Part1 {
-  static final String HOST = "attu2.cs.washington.edu";
-  static final int PORT = 12281;
+  // TODO: Change DEBUG to false before submitting
+  // For testing our server:
+  // change the "testing server" to the address of the server address
+  static final boolean DEBUG = false;
+  static final String HOST = DEBUG ? "testing server" : "attu2.cs.washington.edu";
 
+  static final int PORT = DEBUG ? 12281 : 12235;
   static final int HEADER_LENGTH = 12;
   static final short CLIENT_STEP = 1;
   static final short SERVER_STEP = 2;
@@ -20,25 +24,30 @@ public class Part1 {
   static int tcpPort;
   static Socket tcpSocket;
 
-  public static void main(String[] args) {
-    System.out.println("Program start:");
-    System.out.println("--------------------------------");
-    System.out.println("Stage A begin:");
-    ByteBuffer stageAResule = stageA();
-    System.out.println("--------------------------------");
-    System.out.println("Stage B begin:");
-    ByteBuffer stageBRsult = stageB(stageAResule);
-    System.out.println("--------------------------------");
-    System.out.println("Stage C begin:");
-    ByteBuffer stageCResult = stageC(stageBRsult);
-    System.out.println("--------------------------------");
-    System.out.println("Stage D begin:");
-    stageD(stageCResult);
-    System.out.println("--------------------------------");
-    System.out.println("Program end.");
+  public static void main(String[] args) throws Exception {
+    try {
+      System.out.println("Program start:");
+      System.out.println("--------------------------------");
+      System.out.println("Stage A begin:");
+      ByteBuffer stageAResule = stageA();
+      System.out.println("--------------------------------");
+      System.out.println("Stage B begin:");
+      ByteBuffer stageBRsult = stageB(stageAResule);
+      System.out.println("--------------------------------");
+      System.out.println("Stage C begin:");
+      ByteBuffer stageCResult = stageC(stageBRsult);
+      System.out.println("--------------------------------");
+      System.out.println("Stage D begin:");
+      stageD(stageCResult);
+      System.out.println("--------------------------------");
+      System.out.println("Program end.");
+    } catch (Exception e) {
+      System.out.println("Exception: " + e.getMessage());
+      e.getStackTrace();
+    }
   }
 
-  public static ByteBuffer stageA() {
+  public static ByteBuffer stageA() throws Exception {
     int num, len, udpPort, secretA;
 
     try {
@@ -64,11 +73,11 @@ public class Part1 {
       return respond;
     } catch (Exception e) {
       System.out.println(e);
-      return null;
+      throw new Exception();
     }
   }
 
-  public static ByteBuffer stageB(ByteBuffer respond) {
+  public static ByteBuffer stageB(ByteBuffer respond) throws Exception {
 
     respond.position(HEADER_LENGTH);
     int num = respond.getInt();
@@ -131,14 +140,13 @@ public class Part1 {
       return respondBuffer;
     } catch (Exception e) {
       System.out.println(e);
-      return null;
+      throw new Exception();
     }
   }
 
-  public static ByteBuffer stageC(ByteBuffer prevResp) {
+  public static ByteBuffer stageC(ByteBuffer prevResp) throws Exception {
     prevResp.position(HEADER_LENGTH);
     int tcpPort = prevResp.getInt();
-    int secretB = prevResp.getInt();
 
     try {
       // create TCP connection
@@ -159,11 +167,11 @@ public class Part1 {
       return response;
     } catch (Exception e) {
       System.out.println(e.getMessage());
-      return null;
+      throw new Exception();
     }
   }
 
-  private static void stageD(ByteBuffer prevResp) {
+  private static void stageD(ByteBuffer prevResp) throws Exception {
     prevResp.position(HEADER_LENGTH);
     int num2 = prevResp.getInt();
     int len2 = prevResp.getInt();
@@ -203,6 +211,7 @@ public class Part1 {
       System.out.println("Stage D completed !!!!!");
     } catch (Exception e) {
       System.out.println(e.getMessage());
+      throw new Exception();
     }
   }
 

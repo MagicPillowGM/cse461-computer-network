@@ -1,1 +1,7 @@
-Member Name: George Ma, Linden Gan (lg57), Kenny Mai
+#Member Name:
+George Ma (zma9977)<br>
+Linden Gan (lg57)<br>
+Kenny Mai (mhq520)<br>
+
+
+

@@ -8,18 +8,21 @@ public class Part1 {
   // TODO: Change DEBUG to false before submitting
   // For testing our server:
   // change the "testing server" to the address of the server address
-  static final boolean DEBUG = false;
-  static final String HOST = DEBUG ? "testing server" : "attu2.cs.washington.edu";
+  static final String HOST = "attu5.cs.washington.edu";
 
-  static final int PORT = DEBUG ? 12281 : 12235;
+  static final int PORT = 12235;
   static final int HEADER_LENGTH = 12;
   static final short CLIENT_STEP = 1;
   static final short SERVER_STEP = 2;
   static final short STU_ID = 397;
   static final int RESEND_TIMEOUT = 500;
-
   static final String A1_STRING = "hello world\0";
   static final int A_SECRET = 0;
+
+  static int secretA;
+  static int secretB;
+  static int secretC;
+  static int secretD;
 
   static int tcpPort;
   static Socket tcpSocket;
@@ -40,6 +43,8 @@ public class Part1 {
       System.out.println("Stage D begin:");
       stageD(stageCResult);
       System.out.println("--------------------------------");
+      System.out
+          .println("secretA: " + secretA + ", secretB: " + secretB + ", secretC: " + secretC + ", secretD: " + secretD);
       System.out.println("Program end.");
     } catch (Exception e) {
       System.out.println("Exception: " + e.getMessage());
@@ -48,7 +53,7 @@ public class Part1 {
   }
 
   public static ByteBuffer stageA() throws Exception {
-    int num, len, udpPort, secretA;
+    int num, len, udpPort;
 
     try {
       // Sent message to the server
@@ -134,7 +139,7 @@ public class Part1 {
       ByteBuffer respondBuffer = ByteBuffer.wrap(receiveBuffer);
       respondBuffer.position(HEADER_LENGTH);
       tcpPort = respondBuffer.getInt();
-      int secretB = respondBuffer.getInt();
+      secretB = respondBuffer.getInt();
       System.out.println("tcpPort: " + tcpPort + " secretB: " + secretB);
       System.out.println("Stage B completed !!!!!");
       return respondBuffer;
@@ -160,7 +165,7 @@ public class Part1 {
       response.position(HEADER_LENGTH);
       int num2 = response.getInt();
       int len2 = response.getInt();
-      int secretC = response.getInt();
+      secretC = response.getInt();
       byte c = response.get();
       System.out.println("num2: " + num2 + " len2: " + len2 + " secretC: " + secretC + "c: " + c);
       System.out.println("Stage C completed !!!!!");
@@ -206,7 +211,7 @@ public class Part1 {
       // parse response
       ByteBuffer response = ByteBuffer.wrap(buff);
       response.position(HEADER_LENGTH);
-      int secretD = response.getInt();
+      secretD = response.getInt();
       System.out.println("secretD: " + secretD);
       System.out.println("Stage D completed !!!!!");
     } catch (Exception e) {

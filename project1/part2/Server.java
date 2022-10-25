@@ -78,190 +78,158 @@ public class Server {
             } catch (Exception e) {
                 System.out.println("program end with exception: ");
                 e.printStackTrace();
-                throw new RuntimeException(e);
-            } finally { // close all the socket
-                if (udpSocket != null) {
-                    udpSocket.close();
-                }
-                if (tcpSocketCD != null) {
-                    try {
+            } finally { // close all the socket and streams
+                try {
+                    if (udpSocket != null) {
+                        udpSocket.close();
+                    }
+                    if (tcpSocketCD != null) {
                         tcpSocketCD.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
+                    if (tcpOutStream != null) {
+                        tcpOutStream.close();
+                    }
+                    if (tcpInput != null) {
+                        tcpInput.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }
 
-        public void stageA() {
-            try {
-                // validate clientStageA
-                if (!verifyMessage2(stageABuff, stageABuff.length, A1_STRING.length(), A_SECRET,
-                        CLIENT_STEP, A1_STRING.getBytes())) {
-                    throw new Exception("client stageA message is not valid!");
-                }
-                // get client's stuID
-                ByteBuffer clientBuff = ByteBuffer.wrap(stageABuff);
-                stuID = clientBuff.getShort(HEADER_LENGTH - 2);
-                System.out.println("client: " + stuID + " recived stageA");
-                // make payload
-                num = Rand.nextInt(30);
-                len = Rand.nextInt(30);
-                udpPort = Rand.nextInt(65535 - 256) + 256;
-                secretA = Rand.nextInt(100);
-                ByteBuffer payload = ByteBuffer.allocate(16);
-                payload.putInt(num);
-                payload.putInt(len);
-                payload.putInt(udpPort);
-                payload.putInt(secretA);
-                // compose response
-                byte[] buff = messageComposer(payload.array(), A_SECRET, SERVER_STEP, stuID);
-                DatagramPacket response = new DatagramPacket(buff, buff.length,
-                        clientPacketA.getAddress(), clientPacketA.getPort());
-
-                // send response
-                this.udpSocket.send(response);
-
-                // setup new upd socket fot stageB
-                udpSocket = new DatagramSocket(udpPort, InetAddress.getLocalHost());
-                udpSocket.setSoTimeout(TIMEOUT);
-            } catch (Exception e) {
-                e.printStackTrace();
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
+        public void stageA() throws IOException {
+            // validate clientStageA
+            if (!verifyMessage2(stageABuff, stageABuff.length, A1_STRING.length(), A_SECRET,
+                    CLIENT_STEP, A1_STRING.getBytes())) {
+                throw new IOException("client stageA message is not valid!");
             }
+            // get client's stuID
+            ByteBuffer clientBuff = ByteBuffer.wrap(stageABuff);
+            stuID = clientBuff.getShort(HEADER_LENGTH - 2);
+            System.out.println("client: " + stuID + " recived stageA");
+            // make payload
+            num = Rand.nextInt(30);
+            len = Rand.nextInt(30);
+            udpPort = Rand.nextInt(65535 - 256) + 256;
+            secretA = Rand.nextInt(100);
+            ByteBuffer payload = ByteBuffer.allocate(16);
+            payload.putInt(num);
+            payload.putInt(len);
+            payload.putInt(udpPort);
+            payload.putInt(secretA);
+            // compose response
+            byte[] buff = messageComposer(payload.array(), A_SECRET, SERVER_STEP, stuID);
+            DatagramPacket response = new DatagramPacket(buff, buff.length,
+                    clientPacketA.getAddress(), clientPacketA.getPort());
+
+            // send response
+            this.udpSocket.send(response);
+
+            // setup new upd socket fot stageB
+            udpSocket = new DatagramSocket(udpPort, InetAddress.getLocalHost());
+            udpSocket.setSoTimeout(TIMEOUT);
         }
 
-        public void stageB() throws Exception {
-            try {
-                System.out.println("client: " + stuID + " recived stageB");
-                // variable num, len, udpPort are result from stage A.
-                int exp_PayloadLen = len + 4;
-                exp_PayloadLen = (exp_PayloadLen % 4 == 0) ? exp_PayloadLen : exp_PayloadLen + (4 - exp_PayloadLen % 4);
-                int exp_MsgLen = HEADER_LENGTH + exp_PayloadLen;
-                // receive client's stageB
-                int numReceived = 0;
-                byte[] recivedBuff = new byte[exp_MsgLen];
-                DatagramPacket clientPacket = new DatagramPacket(recivedBuff, recivedBuff.length);
+        public void stageB() throws IOException {
+            System.out.println("client: " + stuID + " recived stageB");
+            // variable num, len, udpPort are result from stage A.
+            int exp_PayloadLen = len + 4;
+            exp_PayloadLen = (exp_PayloadLen % 4 == 0) ? exp_PayloadLen : exp_PayloadLen + (4 - exp_PayloadLen % 4);
+            int exp_MsgLen = HEADER_LENGTH + exp_PayloadLen;
+            // receive client's stageB
+            int numReceived = 0;
+            byte[] recivedBuff = new byte[exp_MsgLen];
+            DatagramPacket clientPacket = new DatagramPacket(recivedBuff, recivedBuff.length);
 
-                while (numReceived < num) {
-                    // listen for client
-                    udpSocket.receive(clientPacket); // block until receive
+            while (numReceived < num) {
+                // listen for client
+                udpSocket.receive(clientPacket); // block until receive
 
-                    // after receive a packet, check if it is valid
-                    byte[] exp_payload = ByteBuffer.allocate(len + 4).putInt(numReceived).array();
-                    if (!verifyMessage2(recivedBuff, exp_MsgLen, len + 4, secretA,
-                            CLIENT_STEP, exp_payload)) {
-                        throw new Exception("client stageB message is not valid!");
-                    }
-                    // then randomly decide to drop the packet or not
-                    Random boolRand = new Random();
-                    boolean ack = boolRand.nextBoolean();
-                    if (ack) {
-                        // make payload
-                        byte[] payload = ByteBuffer.allocate(4).putInt(numReceived).array();
-                        byte[] buff = messageComposer(payload, secretA, SERVER_STEP, stuID);
-                        DatagramPacket response = new DatagramPacket(buff, buff.length,
-                                clientPacket.getAddress(), clientPacket.getPort());
-                        udpSocket.send(response);
-                        numReceived++;
-                    }
+                // after receive a packet, check if it is valid
+                byte[] exp_payload = ByteBuffer.allocate(len + 4).putInt(numReceived).array();
+                if (!verifyMessage2(recivedBuff, exp_MsgLen, len + 4, secretA,
+                        CLIENT_STEP, exp_payload)) {
+                    throw new IOException("client stageB message is not valid!");
                 }
-
-                // after all packets are acknowledged
-                // make response payload
-                tcpPort = Rand.nextInt(65535 - 256) + 256;
-                secretB = Rand.nextInt(30);
-                ByteBuffer payload = ByteBuffer.allocate(8);
-                payload.putInt(tcpPort);
-                payload.putInt(secretB);
-
-                // set up tcp socket
-                tcpSocketCD = new ServerSocket(tcpPort);
-                tcpSocketCD.setSoTimeout(TIMEOUT);
-
-                // compose response packet
-                byte[] buff = messageComposer(payload.array(), secretA, SERVER_STEP, stuID);
-                DatagramPacket response = new DatagramPacket(buff, buff.length,
-                        clientPacket.getAddress(), clientPacket.getPort());
-                udpSocket.send(response);
-                System.out.println("client: " + stuID + " stageB finished");
-            } catch (Exception e) {
-                e.printStackTrace();
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
-            } finally {
-                if (udpSocket != null) {
-                    udpSocket.close();
+                // then randomly decide to drop the packet or not
+                Random boolRand = new Random();
+                boolean ack = boolRand.nextBoolean();
+                if (ack) {
+                    // make payload
+                    byte[] payload = ByteBuffer.allocate(4).putInt(numReceived).array();
+                    byte[] buff = messageComposer(payload, secretA, SERVER_STEP, stuID);
+                    DatagramPacket response = new DatagramPacket(buff, buff.length,
+                            clientPacket.getAddress(), clientPacket.getPort());
+                    udpSocket.send(response);
+                    numReceived++;
                 }
             }
+
+            // after all packets are acknowledged
+            // make response payload
+            tcpPort = Rand.nextInt(65535 - 256) + 256;
+            secretB = Rand.nextInt(30);
+            ByteBuffer payload = ByteBuffer.allocate(8);
+            payload.putInt(tcpPort);
+            payload.putInt(secretB);
+
+            // set up tcp socket
+            tcpSocketCD = new ServerSocket(tcpPort);
+            tcpSocketCD.setSoTimeout(TIMEOUT);
+
+            // compose response packet
+            byte[] buff = messageComposer(payload.array(), secretA, SERVER_STEP, stuID);
+            DatagramPacket response = new DatagramPacket(buff, buff.length,
+                    clientPacket.getAddress(), clientPacket.getPort());
+            udpSocket.send(response);
+            System.out.println("client: " + stuID + " stageB finished");
         }
 
-        public void stageC() {
-            try {
-                System.out.println("client: " + stuID + " recived stageC");
-                Socket client = tcpSocketCD.accept();
-                tcpOutStream = new BufferedOutputStream(client.getOutputStream());
-                tcpInput = new BufferedInputStream(client.getInputStream());
+        public void stageC() throws IOException {
+            System.out.println("client: " + stuID + " received stageC");
+            Socket client = tcpSocketCD.accept();
+            tcpOutStream = new BufferedOutputStream(client.getOutputStream());
+            tcpInput = new BufferedInputStream(client.getInputStream());
 
-                // preparing the message
-                num2 = Rand.nextInt(30);
-                len2 = Rand.nextInt(30);
-                secretC = Rand.nextInt(100);
-                c = (byte) (Rand.nextInt(94) + 33);
-                ByteBuffer payload = ByteBuffer.allocate(13);
-                payload.putInt(num2);
-                payload.putInt(len2);
-                payload.putInt(secretC);
-                payload.put(c);
-                byte[] message = messageComposer(payload.array(), secretB, SERVER_STEP, stuID);
-                tcpOutStream.write(message);
-                tcpOutStream.flush();
-                System.out.println("client: " + stuID + " stageC finished");
-            } catch (Exception e) {
-                e.printStackTrace();
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
-            }
+            // preparing the message
+            num2 = Rand.nextInt(30);
+            len2 = Rand.nextInt(30);
+            secretC = Rand.nextInt(100);
+            c = (byte) (Rand.nextInt(94) + 33);
+            ByteBuffer payload = ByteBuffer.allocate(13);
+            payload.putInt(num2);
+            payload.putInt(len2);
+            payload.putInt(secretC);
+            payload.put(c);
+            byte[] message = messageComposer(payload.array(), secretB, SERVER_STEP, stuID);
+            tcpOutStream.write(message);
+            tcpOutStream.flush();
+            System.out.println("client: " + stuID + " stageC finished");
         }
 
-        public void stageD() {
-            try {
-                System.out.println("client: " + stuID + " recived stageD");
-                // receive client's stageD messages
-                int paddedPayloadLen = len2 % 4 == 0 ? len2 : len2 + (4 - len2 % 4);
-                byte[] recivedBuff = new byte[HEADER_LENGTH + paddedPayloadLen];
-                for (int i = 0; i < num2; i++) {
-                    int bytesReceived = tcpInput.read(recivedBuff);
-                    byte[] exp_payload = new byte[len2];
-                    Arrays.fill(exp_payload, c);
-                    if (!verifyMessage2(recivedBuff, bytesReceived, len2,
-                            secretC, CLIENT_STEP, exp_payload)) {
-                        throw new Exception("client stageD message is not valid!");
-                    }
-                }
-                // step D-2
-                secretD = new Random().nextInt(100);
-                byte[] payload = ByteBuffer.allocate(4).putInt(secretD).array();
-                byte[] message = messageComposer(payload, secretC, SERVER_STEP, stuID);
-                tcpOutStream.write(message);
-                tcpOutStream.flush();
-                tcpSocketCD.close();
-                System.out.println("client: " + stuID + " stageD finished");
-            } catch (Exception e) {
-                e.printStackTrace();
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
-            } finally {
-                if (tcpSocketCD != null) {
-                    try {
-                        tcpSocketCD.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+        public void stageD() throws IOException {
+            System.out.println("client: " + stuID + " recived stageD");
+            // receive client's stageD messages
+            int paddedPayloadLen = len2 % 4 == 0 ? len2 : len2 + (4 - len2 % 4);
+            byte[] recivedBuff = new byte[HEADER_LENGTH + paddedPayloadLen];
+            for (int i = 0; i < num2; i++) {
+                int bytesReceived = tcpInput.read(recivedBuff);
+                byte[] exp_payload = new byte[len2];
+                Arrays.fill(exp_payload, c);
+                if (!verifyMessage2(recivedBuff, bytesReceived, len2,
+                        secretC, CLIENT_STEP, exp_payload)) {
+                    throw new IOException("client stageD message is not valid!");
                 }
             }
-
+            // step D-2
+            secretD = new Random().nextInt(100);
+            byte[] payload = ByteBuffer.allocate(4).putInt(secretD).array();
+            byte[] message = messageComposer(payload, secretC, SERVER_STEP, stuID);
+            tcpOutStream.write(message);
+            tcpOutStream.flush();
+            tcpSocketCD.close();
+            System.out.println("client: " + stuID + " stageD finished");
         }
 
         // Compose the message following the protocol

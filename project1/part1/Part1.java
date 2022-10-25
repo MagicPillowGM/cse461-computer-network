@@ -8,7 +8,7 @@ public class Part1 {
   // TODO: Change DEBUG to false before submitting
   // For testing our server:
   // change the "testing server" to the address of the server address
-  static final String HOST = "attu5.cs.washington.edu";
+  static final String HOST = "attu2.cs.washington.edu";
 
   static final int PORT = 12235;
   static final int HEADER_LENGTH = 12;
@@ -27,18 +27,17 @@ public class Part1 {
   static int tcpPort;
   static Socket tcpSocket;
 
-  public static void main(String[] args) throws Exception {
-    try {
+  public static void main(String[] args) {
       System.out.println("Program start:");
       System.out.println("--------------------------------");
       System.out.println("Stage A begin:");
-      ByteBuffer stageAResule = stageA();
+      ByteBuffer stageAResult = stageA();
       System.out.println("--------------------------------");
       System.out.println("Stage B begin:");
-      ByteBuffer stageBRsult = stageB(stageAResule);
+      ByteBuffer stageBResult = stageB(stageAResult);
       System.out.println("--------------------------------");
       System.out.println("Stage C begin:");
-      ByteBuffer stageCResult = stageC(stageBRsult);
+      ByteBuffer stageCResult = stageC(stageBResult);
       System.out.println("--------------------------------");
       System.out.println("Stage D begin:");
       stageD(stageCResult);
@@ -46,13 +45,9 @@ public class Part1 {
       System.out
           .println("secretA: " + secretA + ", secretB: " + secretB + ", secretC: " + secretC + ", secretD: " + secretD);
       System.out.println("Program end.");
-    } catch (Exception e) {
-      System.out.println("Exception: " + e.getMessage());
-      e.getStackTrace();
-    }
   }
 
-  public static ByteBuffer stageA() throws Exception {
+  public static ByteBuffer stageA() {
     int num, len, udpPort;
 
     try {
@@ -77,12 +72,12 @@ public class Part1 {
       System.out.println("Stage A completed !!!!!");
       return respond;
     } catch (Exception e) {
-      System.out.println(e);
-      throw new Exception();
+      e.printStackTrace();
     }
+    return null;
   }
 
-  public static ByteBuffer stageB(ByteBuffer respond) throws Exception {
+  public static ByteBuffer stageB(ByteBuffer respond) {
 
     respond.position(HEADER_LENGTH);
     int num = respond.getInt();
@@ -144,12 +139,12 @@ public class Part1 {
       System.out.println("Stage B completed !!!!!");
       return respondBuffer;
     } catch (Exception e) {
-      System.out.println(e);
-      throw new Exception();
+      e.printStackTrace();
     }
+    return null;
   }
 
-  public static ByteBuffer stageC(ByteBuffer prevResp) throws Exception {
+  public static ByteBuffer stageC(ByteBuffer prevResp) {
     prevResp.position(HEADER_LENGTH);
     int tcpPort = prevResp.getInt();
 
@@ -167,16 +162,16 @@ public class Part1 {
       int len2 = response.getInt();
       secretC = response.getInt();
       byte c = response.get();
-      System.out.println("num2: " + num2 + " len2: " + len2 + " secretC: " + secretC + "c: " + c);
+      System.out.println("num2: " + num2 + " len2: " + len2 + " secretC: " + secretC + " c: " + c);
       System.out.println("Stage C completed !!!!!");
       return response;
     } catch (Exception e) {
-      System.out.println(e.getMessage());
-      throw new Exception();
+      e.printStackTrace();
     }
+    return null;
   }
 
-  private static void stageD(ByteBuffer prevResp) throws Exception {
+  private static void stageD(ByteBuffer prevResp) {
     prevResp.position(HEADER_LENGTH);
     int num2 = prevResp.getInt();
     int len2 = prevResp.getInt();
@@ -215,8 +210,7 @@ public class Part1 {
       System.out.println("secretD: " + secretD);
       System.out.println("Stage D completed !!!!!");
     } catch (Exception e) {
-      System.out.println(e.getMessage());
-      throw new Exception();
+      e.printStackTrace();
     }
   }
 

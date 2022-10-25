@@ -12,6 +12,10 @@ secretD: 21<br>
 
 
 Compile Instructions<br>
-		1. Move current directory to to where the java file belongs.<br>
-		2. Prepare the Server.<br> 
-		3. Run the java file with the command: java Part1.java<br>
+1. For testing against the server on attu2: <br>
+			- set the variable `DEBUG` to false; <br>
+			- then complie and run the program Part1.java <br>
+2. For testing against our impleremented server<br>
+			- change `HOST` from attu2 to whatever the address that the server is running on <br>
+			- then complie and run the program Part1.java<br>
+		

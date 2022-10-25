@@ -6,8 +6,7 @@ import java.util.Random;
 
 public class Server {
     // TODO: Change DEBUG to false before submitting
-    static final boolean DEBUG = false;
-    static final int UDP_PORT = DEBUG ? 12281 : 12235;
+    static final int UDP_PORT = 12235;
 
     static final int HEADER_LENGTH = 12;
     static final short CLIENT_STEP = 1;
@@ -73,7 +72,8 @@ public class Server {
                 stageC();
                 stageD();
                 System.out.println("client " + stuID + " thread finished!");
-                System.out.println("secretA: " + secretA + " secretB: " + secretB + " secretC: " + secretC);
+                System.out.println("secretA: " + secretA + " secretB: " + secretB + " secretC: " + secretC
+                        + " secretD: " + secretD);
                 System.out.println("================================");
             } catch (Exception e) {
                 System.out.println("program end with exception: ");

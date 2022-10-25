@@ -4,6 +4,13 @@ Linden Gan (lg57)<br>
 Kenny Mai (mhq520)<br>
 
 
+#Secrets
+secretA: 73 <br>
+secretB: 65 <br>
+secretC: 202 <br>
+secretD: 21<br>
+
+
 #Compile Instructions
-		1. If running with terminal, move directory to where the java file belongs.
-		2. Run the java file with the command: java Server.java
+		1. Move current directory to to where the java file belongs.<br>
+		2. Run the java file with the command: java Part1.java<br>

@@ -5,5 +5,5 @@ Kenny Mai (mhq520)<br>
 
 
 #Compile Instructions
-		1. If running with terminal, move directory to where the java file belongs.
+		1. Move current directory to where the java file belongs.<br>
 		2. Run the java file with the command: java Server.java

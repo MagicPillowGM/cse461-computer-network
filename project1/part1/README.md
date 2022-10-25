@@ -13,4 +13,5 @@ secretD: 21<br>
 
 Compile Instructions<br>
 		1. Move current directory to to where the java file belongs.<br>
-		2. Run the java file with the command: java Part1.java<br>
+		2. Prepare the Server.<br> 
+		3. Run the java file with the command: java Part1.java<br>

@@ -69,12 +69,12 @@ class Part3Controller (object):
     # ICMP
     fm = of.ofp_flow_mod()
     fm.match.dl_type = 0x0800
-    fm.match.nw_src = IPS.hnotrust
+    fm.match.nw_src = IPS["hnotrust"][0]
     self.connection.send(fm)
     # any IP
     fm = of.ofp_flow_mod()
-    fm.match.nw_src = IPS.hnotrust
-    fm.match.nw_des = IPS.serv1
+    fm.match.nw_src = IPS["hnotrust"][0]
+    fm.match.nw_des = IPS["serv1"][0]
     self.connection.send(fm)
     # others acceptable
     fm = of.ofp_flow_mod()

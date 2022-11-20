@@ -66,23 +66,49 @@ class Part3Controller (object):
 
   def cores21_setup(self):
     #put core switch rules here
+
     # ICMP
-    fm = of.ofp_flow_mod()
-    fm.match.dl_type = 0x0800
-    fm.match.nw_src = IPS["hnotrust"][0]
-    self.connection.send(fm)
+    fm1 = of.ofp_flow_mod()
+    fm1.match.dl_type = 0x0800
+    fm1.match.nw_proto = 1
+    fm1.match.nw_src = IPAddr(IPS['hnotrust'][0])
+    self.connection.send(fm1)
+
     # any IP
-    fm = of.ofp_flow_mod()
-    fm.match.nw_src = IPS["hnotrust"][0]
-    fm.match.nw_des = IPS["serv1"][0]
-    self.connection.send(fm)
+    fm2 = of.ofp_flow_mod()
+    fm2.match.nw_type = 0x0800
+    fm2.match.nw_src = IPAddr(IPS['hnotrust'][0])
+    fm2.match.nw_dst = IPAddr(IPS['serv1'][0])
+    self.connection.send(fm2)
+
     # others acceptable
-    fm = of.ofp_flow_mod()
-    print(dir(self.connection))
-    print(dir(fm.match))
-    print(dir(of))
-    fm.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
-    self.connection.send(fm)
+    fm3 = of.ofp_flow_mod()
+    fm3.match.dl_type = 0x0800
+    fm3.match.nw_dst = IPAddr(IPS['h10'][0])
+    fm3.actions.append(of.ofp_action_output(port=1))
+    self.connection.send(fm3)
+
+    fm4 = of.ofp_flow_mod()
+    fm4.match.dl_type = 0x0800
+    fm4.match.nw_dst = IPAddr(IPS['h20'][0])
+    fm4.actions.append(of.ofp_action_output(port=2))
+    self.connection.send(fm4)
+
+    fm5 = of.ofp_flow_mod()
+    fm5.match.dl_type = 0x0800
+    fm5.match.nw_dst = IPAddr(IPS['h30'][0])
+    fm5.actions.append(of.ofp_action_output(port=3))
+    self.connection.send(fm5)
+
+    fm6 = of.ofp_flow_mod()
+    fm6.match.dl_type = 0x0800
+    fm6.match.nw_dst = IPAddr(IPS['serv1'][0])
+    fm6.actions.append(of.ofp_action_output(port=4))
+    self.connection.send(fm6)
+
+    fm7 = of.ofp_flow_mod()
+    fm7.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
+    self.connection.send(fm7)
 
   def dcs31_setup(self):
     #put datacenter switch rules here

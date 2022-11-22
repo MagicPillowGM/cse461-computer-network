@@ -129,7 +129,7 @@ class Part4Controller (object):
           self.connection.send(fm)
                
           arp_reply_msg = arp()
-          arp_reply_msg.hwsrc = EthAddr("00:00:00:00:00:01")
+          arp_reply_msg.hwsrc = EthAddr("00:00:00:00:00:10")
           arp_reply_msg.hwdst = packet.src
           arp_reply_msg.opcode = arp.REPLY
           arp_reply_msg.protosrc = packet.payload.protodst
@@ -138,7 +138,7 @@ class Part4Controller (object):
           # wrap the ARP Reply msg into Ethernet
           ether = ethernet()
           ether.type = ethernet.APR_TYPE
-          ether.src = EthAddr("00:00:00:00:00:02")
+          ether.src = EthAddr("00:00:00:00:00:11")
           ether.dst = packet.src
           ether.payload = arp_reply_msg
           

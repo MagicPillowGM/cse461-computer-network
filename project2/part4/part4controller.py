@@ -78,13 +78,8 @@ class Part4Controller (object):
     fm = of.ofp_flow_mod()
     fm.match.dl_type = 0x0800
     fm.match.nw_src = IPS["hnotrust"][0]
-    fm.match.nw_des = IPS["serv1"][0]
+    fm.match.nw_dst = IPS["serv1"][0]
     self.connection.send(fm)
-
-    # others acceptable
-    # fm = of.ofp_flow_mod()
-    # fm.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
-    # self.connection.send(fm)
 
   def dcs31_setup(self):
     #put datacenter switch rules here
@@ -107,7 +102,6 @@ class Part4Controller (object):
     Packets not handled by the router rules will be
     forwarded to this method to be handled by the controller
     """
-
     packet = event.parsed # This is the parsed packet data.
     if not packet.parsed:
       log.warning("Ignoring incomplete packet")
@@ -118,32 +112,30 @@ class Part4Controller (object):
 
     print ("Unhandled packet from " + str(self.connection.dpid) + ":" + packet.dump())
 
-    if (packet.type == packet.ARP_TYPE and packet.payload.opcode == arp.REQUEST):
-          fm = of.ofp_flow_mod()
-          fm.match.dl_type = 0x0800
-          # fm.priority = 7
-          fm.match.nw_dst = packet.payload.protosrc
-          # fm.actions.append(of.ofp_action_dl_addr.set_src())
-          fm.actions.append(of.ofp_action_dl_addr.set_dst(packet.src))
-          fm.actions.append(of.ofp_action_output(port=port_num))
-          self.connection.send(fm)
-               
-          arp_reply_msg = arp()
-          arp_reply_msg.hwsrc = EthAddr("00:00:00:00:00:10")
-          arp_reply_msg.hwdst = packet.src
-          arp_reply_msg.opcode = arp.REPLY
-          arp_reply_msg.protosrc = packet.payload.protodst
-          arp_reply_msg.protodst = packet.payload.protosrc
-          
-          # wrap the ARP Reply msg into Ethernet
-          ether = ethernet()
-          ether.type = ethernet.APR_TYPE
-          ether.src = EthAddr("00:00:00:00:00:11")
-          ether.dst = packet.src
-          ether.payload = arp_reply_msg
-          
-          # send packet
-          self.resend_packet(ether, port_num)
+    if isinstance(packet.next, arp):
+      fm = of.ofp_flow_mod()
+      fm.match.dl_type = 0x0800
+      fm.match.nw_dst = packet.next.protosrc
+      fm.actions.append(of.ofp_action_dl_addr.set_dst(packet.src))
+      fm.actions.append(of.ofp_action_output(port=port_num))
+      self.connection.send(fm)
+
+      arp_reply_msg = arp()
+      arp_reply_msg.hwsrc = packet.dst
+      arp_reply_msg.hwdst = packet.src
+      arp_reply_msg.opcode = arp.REPLY
+      arp_reply_msg.protosrc = packet.next.protodst
+      arp_reply_msg.protodst = packet.next.protosrc
+
+      # wrap the ARP Reply msg into Ethernet
+      ether = ethernet()
+      ether.type = ethernet.ARP_TYPE
+      ether.src = packet.dst
+      ether.dst = packet.src
+      ether.payload = arp_reply_msg
+
+      # send packet
+      self.resend_packet(ether, port_num)
 
 def launch ():
   """
@@ -151,5 +143,5 @@ def launch ():
   """
   def start_switch (event):
     log.debug("Controlling %s" % (event.connection,))
-    Part3Controller(event.connection)
+    Part4Controller(event.connection)
   core.openflow.addListenerByName("ConnectionUp", start_switch)

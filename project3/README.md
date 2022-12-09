@@ -34,6 +34,15 @@ RTT is positively related to queue size
 
 ### 5. Identify and describe two ways to mitigate the bufferbloat problem.
 a) Have smaller buffer size. From the experiment we can see that smaller buffer queue size resulted in shorter webpage fetch time. 
-Therefore, by decreasing the buffer size we will solve the problem.
+Therefore, by decreasing the buffer size we will solve the problem.  
 b) Apply slow start to increment window size from 1 to n, instead of suddenly starting with a big window size, 
 which causes a burst of packets while other part of the network is not ready yet, which may cause congestion.
+
+## Part 3 questions
+### What is the average webpage fetch time and its standard deviation when q=20 and q=100?
+
+### Compare the webpage fetch time between q=20 and q=100 from Part 3. Which queue length gives a lower fetch time? How is this different from Part 2?
+
+### Do you see the difference in the queue size graphs from Part 2 and Part 3? Give a brief explanation for the result you see.
+
+### Do you think we have solved bufferbloat problem? Explain your reasoning.

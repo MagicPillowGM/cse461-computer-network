@@ -1,8 +1,8 @@
 ## Instructions
-For experiment in Part 2, run
-    sudo ./run.sh
-For experiment in Part 3 run
-    sudo ./run_brr.sh
+For experiment in Part 2, run  
+`sudo ./run.sh`  
+For experiment in Part 3, run  
+`sudo ./run_brr.sh`
 
 ## Part 2 questions
 

@@ -13,6 +13,7 @@ delay=5
 iperf_port=5001
 
 for qsize in 20 100; do
+    sudo mn -c
     dir=bb-q$qsize
 
     # TODO: Run bufferbloat.py here...

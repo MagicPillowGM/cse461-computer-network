@@ -37,12 +37,23 @@ a) Have smaller buffer size. From the experiment we can see that smaller buffer 
 Therefore, by decreasing the buffer size we will solve the problem.  
 b) Apply slow start to increment window size from 1 to n, instead of suddenly starting with a big window size, 
 which causes a burst of packets while other part of the network is not ready yet, which may cause congestion.
+c) Minimize the number of network bottlenecks, or minimize the data rate differences of two adjacent links
+d) Design algorithm to better predict congestion so that sender can lower the data rate before congestion happens
 
 ## Part 3 questions
 ### What is the average webpage fetch time and its standard deviation when q=20 and q=100?
+mean for queue size 20: 6.31263861111111  
+stdev for queue size 20: 6.773536224410574  
+mean for queue size 100: 5.814845157894736  
+stdev for queue size 100: 3.120990525984103 
 
 ### Compare the webpage fetch time between q=20 and q=100 from Part 3. Which queue length gives a lower fetch time? How is this different from Part 2?
+Between q=20 and q=100, q=100 actually gives shorter time, unlike Part 2 in which q=20 gives shorter time.
+It indicates that bbr algorithm can do better in solving bufferbloat problem in longer queue.
 
 ### Do you see the difference in the queue size graphs from Part 2 and Part 3? Give a brief explanation for the result you see.
+For q=20, both Part 2 and Part 3's queues are overflowed
 
 ### Do you think we have solved bufferbloat problem? Explain your reasoning.
+Not completely. bbr algorithm can indeed do better for longer queue, but for shorter queue, packets can still overflow the queue and get lost.
+So, we haven't solve bufferbloat problem. However, shorter queue react more quickly, so even if it's overflowed, it won't cause severe congestion than longer queue does.

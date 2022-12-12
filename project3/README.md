@@ -64,8 +64,8 @@ It indicates that bbr algorithm can do better in solving bufferbloat problem in 
 
 ### 3. Do you see the difference in the queue size graphs from Part 2 and Part 3? Give a brief explanation for the result you see.
 For q=20, the queue size graphs look similar because both queues are overflowed, though the mean number of packets for Part 2 is higher than Part 3's,
-since bbr algorithm tries to mitigate this.  
-For q=100, however, Part 2's graph reaches 100 in y axis,
+since bbr algorithm in Part 3 tries to mitigate this.  
+For q=100, however, Part 2's graph reaches 100 in y axis freqently,
 but Part 3 doesn't. And, Part 2's average packet numbers is much higher than Part 3's. This is because Part 3's bbr algorithm avoids buffer's overflow
 and controls the number of packets in a relatively small number.
 

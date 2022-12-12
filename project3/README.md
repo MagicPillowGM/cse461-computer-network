@@ -42,9 +42,9 @@ RTT is positively related to queue size
 a) Have smaller buffer size. From the experiment we can see that smaller buffer queue size resulted in shorter webpage fetch time. 
 Therefore, by decreasing the buffer size we will solve the problem.  
 b) Apply slow start to increment window size from 1 to n, instead of suddenly starting with a big window size, 
-which causes a burst of packets while other part of the network is not ready yet, which may cause congestion.
-c) Minimize the number of network bottlenecks, or minimize the data rate differences of two adjacent links
-d) Design algorithm to better predict congestion so that sender can lower the data rate before congestion happens
+which causes a burst of packets while other part of the network is not ready yet, which may cause congestion.  
+c) Minimize the number of network bottlenecks, or minimize the data rate differences of two adjacent links.  
+d) Design algorithm to better predict congestion so that sender can lower the data rate before congestion happens.  
 
 ## Part 3 questions
 ### What is the average webpage fetch time and its standard deviation when q=20 and q=100?

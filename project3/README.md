@@ -1,3 +1,8 @@
+## Group Members
+George Ma (zma9977)<br>
+Linden Gan (lg57)<br>
+Kenny Mai (mhq520)<br>
+
 ## Instructions
 For experiment in Part 2, run  
 `sudo ./run.sh`  
@@ -47,21 +52,21 @@ c) Minimize the number of network bottlenecks, or minimize the data rate differe
 d) Design algorithm to better predict congestion so that sender can lower the data rate before congestion happens.  
 
 ## Part 3 questions
-### What is the average webpage fetch time and its standard deviation when q=20 and q=100?
+### 1. What is the average webpage fetch time and its standard deviation when q=20 and q=100?
 mean for queue size 20: 6.31263861111111  
 stdev for queue size 20: 6.773536224410574  
 mean for queue size 100: 5.814845157894736  
 stdev for queue size 100: 3.120990525984103 
 
-### Compare the webpage fetch time between q=20 and q=100 from Part 3. Which queue length gives a lower fetch time? How is this different from Part 2?
+### 2. Compare the webpage fetch time between q=20 and q=100 from Part 3. Which queue length gives a lower fetch time? How is this different from Part 2?
 Between q=20 and q=100, q=100 actually gives shorter time, unlike Part 2 in which q=20 gives shorter time.
 It indicates that bbr algorithm can do better in solving bufferbloat problem in longer queue, but still has problem when queue is short.
 
-### Do you see the difference in the queue size graphs from Part 2 and Part 3? Give a brief explanation for the result you see.
+### 3. Do you see the difference in the queue size graphs from Part 2 and Part 3? Give a brief explanation for the result you see.
 For q=20, the queue size graphs look similar because both queues are overflowed. For q=100, however, Part 2's graph reaches 100 in y axis,
 but Part 3 doesn't. And, Part 2's average packet numbers is much higher than Part 3's. This is because Part 3's bbr algorithm avoids buffer's overflow
 and controls the number of packets in a relatively small number.
 
-### Do you think we have solved bufferbloat problem? Explain your reasoning.
+### 4. Do you think we have solved bufferbloat problem? Explain your reasoning.
 Not completely. bbr algorithm can indeed do better for longer queue, but for shorter queue, packets can still overflow the queue and get lost.
 So, we haven't solve bufferbloat problem. However, shorter queue react more quickly, so even if it's overflowed, it won't cause severe congestion than longer queue does.
